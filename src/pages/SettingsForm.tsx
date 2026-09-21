@@ -2,7 +2,7 @@ import { useEffect, useState, type FocusEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ListRow, Paragraph, Spacing, TextField, Top, useToast } from "@toss/tds-mobile";
 import { generateHapticFeedback } from "@apps-in-toss/web-framework";
-import { ScreenScaffold } from "@/components/ScreenScaffold";
+import { PageShell } from "@/components/PageShell";
 import { SubmitFooter } from "@/components/BottomCTA";
 import { useSettings } from "@/hooks/kpass";
 import { logClick } from "@/lib/analytics";
@@ -106,24 +106,15 @@ export default function SettingsForm({ mode = "onboarding" }: { mode?: Mode }) {
   };
 
   return (
-    <ScreenScaffold
-      top={
-        <Top
-          title={
-            <Top.TitleParagraph>
-              {isSettings ? "설정" : "K-패스 유형을 알려주세요"}
-            </Top.TitleParagraph>
-          }
-        />
-      }
-      bottom={
-        <SubmitFooter
-          label={isSettings ? "저장" : "시작하기"}
-          onClick={submit}
-          disabled={fare === ""}
-        />
-      }
-    >
+    // 본문 좌우 패딩은 TDS 컴포넌트 내장값(Top·ListRow·TextField)에 맡겨 정렬선을 맞춘다
+    <PageShell style={{ paddingTop: 0 }}>
+      <Top
+        title={
+          <Top.TitleParagraph>
+            {isSettings ? "설정" : "K-패스 유형을 알려주세요"}
+          </Top.TitleParagraph>
+        }
+      />
       <Spacing size={16} />
       {TYPES.map((t) => (
         <ListRow
@@ -131,7 +122,7 @@ export default function SettingsForm({ mode = "onboarding" }: { mode?: Mode }) {
           contents={<ListRow.Texts type="1RowTypeA" top={t.label} />}
           right={
             userType === t.value ? (
-              <Paragraph.Text typography="t5" color="var(--adaptiveBlue500)">
+              <Paragraph.Text typography="t5" color="var(--tds-color-blue500)">
                 ✓
               </Paragraph.Text>
             ) : undefined
@@ -153,15 +144,13 @@ export default function SettingsForm({ mode = "onboarding" }: { mode?: Mode }) {
         placeholder="예: 1500"
         value={fare}
         hasError={fareError != null}
-        help={fareError ?? undefined}
+        help={fareError ?? "교통카드 1회 결제 금액을 넣어주세요"}
         onFocus={centerField}
         onChange={(e) => {
           setFare(digits(e.target.value));
           setFareError(null);
         }}
       />
-      <Spacing size={8} />
-      <Paragraph.Text typography="t7">교통카드 1회 결제 금액을 넣어주세요</Paragraph.Text>
       {isSettings && (
         <>
           <Spacing size={24} />
@@ -184,6 +173,11 @@ export default function SettingsForm({ mode = "onboarding" }: { mode?: Mode }) {
         </>
       )}
       <Spacing size={96} />
-    </ScreenScaffold>
+      <SubmitFooter
+        label={isSettings ? "저장" : "시작하기"}
+        onClick={submit}
+        disabled={fare === ""}
+      />
+    </PageShell>
   );
 }
