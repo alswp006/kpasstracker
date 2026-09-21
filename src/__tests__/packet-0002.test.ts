@@ -13,6 +13,12 @@ import type {
   MonthSnapshot,
   MonthIndex,
 } from "@/lib/types";
+import {
+  loadSettings,
+  loadRides,
+  loadMonthMeta,
+  buildMonthIndex,
+} from "@/lib/storage/loaders";
 
 // ============================================================================
 // AC-1: loadSettings(date) handles corrupt JSON gracefully
@@ -31,7 +37,7 @@ describe("loadSettings()", () => {
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
 
     // Act
-    const loadSettings = require("@/lib/storage/loaders").loadSettings;
+    
     const result = loadSettings(new Date());
 
     // Assert
@@ -47,7 +53,7 @@ describe("loadSettings()", () => {
     expect(localStorage.getItem("kpass:settings")).toBeNull();
 
     // Act
-    const loadSettings = require("@/lib/storage/loaders").loadSettings;
+    
     const result = loadSettings(new Date());
 
     // Assert
@@ -68,7 +74,7 @@ describe("loadSettings()", () => {
     localStorage.setItem("kpass:settings", JSON.stringify(validSettings));
 
     // Act
-    const loadSettings = require("@/lib/storage/loaders").loadSettings;
+    
     const result = loadSettings(new Date());
 
     // Assert
@@ -82,7 +88,7 @@ describe("loadSettings()", () => {
     localStorage.setItem("kpass:settings", "");
 
     // Act
-    const loadSettings = require("@/lib/storage/loaders").loadSettings;
+    
     const result = loadSettings(new Date());
 
     // Assert
@@ -103,7 +109,7 @@ describe("loadSettings()", () => {
     localStorage.setItem("kpass:settings", JSON.stringify(settingsWithNullPass));
 
     // Act
-    const loadSettings = require("@/lib/storage/loaders").loadSettings;
+    
     const result = loadSettings(new Date());
 
     // Assert
@@ -123,7 +129,7 @@ describe("loadRides()", () => {
 
   it("should return null when kpass:rides does not exist", () => {
     // Act
-    const loadRides = require("@/lib/storage/loaders").loadRides;
+    
     const result = loadRides(new Date());
 
     // Assert
@@ -146,7 +152,7 @@ describe("loadRides()", () => {
     localStorage.setItem("kpass:rides", JSON.stringify(validRideLog));
 
     // Act
-    const loadRides = require("@/lib/storage/loaders").loadRides;
+    
     const result = loadRides(new Date());
 
     // Assert
@@ -160,7 +166,7 @@ describe("loadRides()", () => {
     localStorage.setItem("kpass:rides", "not valid json at all");
 
     // Act
-    const loadRides = require("@/lib/storage/loaders").loadRides;
+    
     const result = loadRides(new Date());
 
     // Assert
@@ -179,7 +185,7 @@ describe("loadRides()", () => {
     localStorage.setItem("kpass:rides", JSON.stringify(rideLogWithEmptyDays));
 
     // Act
-    const loadRides = require("@/lib/storage/loaders").loadRides;
+    
     const result = loadRides(new Date());
 
     // Assert
@@ -217,7 +223,7 @@ describe("loadMonthMeta()", () => {
     localStorage.setItem("kpass:monthMeta", JSON.stringify(monthMeta));
 
     // Act
-    const loadMonthMeta = require("@/lib/storage/loaders").loadMonthMeta;
+    
     const result = loadMonthMeta(new Date());
 
     // Assert: snapshot id should be overwritten to "2026-08"
@@ -255,7 +261,7 @@ describe("loadMonthMeta()", () => {
     localStorage.setItem("kpass:monthMeta", JSON.stringify(monthMeta));
 
     // Act
-    const loadMonthMeta = require("@/lib/storage/loaders").loadMonthMeta;
+    
     const result = loadMonthMeta(new Date());
 
     // Assert
@@ -267,7 +273,7 @@ describe("loadMonthMeta()", () => {
 
   it("should return null when kpass:monthMeta does not exist", () => {
     // Act
-    const loadMonthMeta = require("@/lib/storage/loaders").loadMonthMeta;
+    
     const result = loadMonthMeta(new Date());
 
     // Assert
@@ -279,7 +285,7 @@ describe("loadMonthMeta()", () => {
     localStorage.setItem("kpass:monthMeta", "{not valid json");
 
     // Act
-    const loadMonthMeta = require("@/lib/storage/loaders").loadMonthMeta;
+    
     const result = loadMonthMeta(new Date());
 
     // Assert
@@ -298,7 +304,7 @@ describe("loadMonthMeta()", () => {
     localStorage.setItem("kpass:monthMeta", JSON.stringify(emptyMonthMeta));
 
     // Act
-    const loadMonthMeta = require("@/lib/storage/loaders").loadMonthMeta;
+    
     const result = loadMonthMeta(new Date());
 
     // Assert
@@ -314,7 +320,7 @@ describe("loadMonthMeta()", () => {
 describe("buildMonthIndex()", () => {
   it("AC-3[P0]: returns {byMonth:{}, monthsDesc:[]} when input is invalid (e.g., string 'abc')", () => {
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex("abc");
 
     // Assert
@@ -325,7 +331,7 @@ describe("buildMonthIndex()", () => {
 
   it("AC-3[P0]: returns {byMonth:{}, monthsDesc:[]} when input is null", () => {
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex(null);
 
     // Assert
@@ -340,7 +346,7 @@ describe("buildMonthIndex()", () => {
     };
 
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex(dateRideMap);
 
     // Assert: monthsDesc should be ['2026-09', '2026-08']
@@ -360,7 +366,7 @@ describe("buildMonthIndex()", () => {
     };
 
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex(dateRideMap);
 
     // Assert
@@ -378,14 +384,14 @@ describe("buildMonthIndex()", () => {
     };
 
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex(dateRideMap);
 
     // Assert: Should be sorted descending
     expect(result.monthsDesc).toEqual(["2026-09", "2026-03", "2025-12", "2025-06"]);
-    // Verify descending order
+    // Verify descending order (string comparison for ISO date format)
     for (let i = 0; i < result.monthsDesc.length - 1; i++) {
-      expect(result.monthsDesc[i]).toBeGreaterThan(result.monthsDesc[i + 1]);
+      expect(result.monthsDesc[i] > result.monthsDesc[i + 1]).toBe(true);
     }
   });
 
@@ -397,7 +403,7 @@ describe("buildMonthIndex()", () => {
     };
 
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex(dateRideMap);
 
     // Assert
@@ -410,7 +416,7 @@ describe("buildMonthIndex()", () => {
     const emptyMap = {};
 
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex(emptyMap);
 
     // Assert
@@ -426,7 +432,7 @@ describe("buildMonthIndex()", () => {
     };
 
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex(mixedMap);
 
     // Assert: Should extract only valid YYYY-MM- dates
@@ -443,7 +449,7 @@ describe("buildMonthIndex()", () => {
     };
 
     // Act
-    const buildMonthIndex = require("@/lib/storage/loaders").buildMonthIndex;
+    
     const result = buildMonthIndex(dateRideMap);
 
     // Assert: byMonth should have entries for each unique month
@@ -504,7 +510,6 @@ describe("Storage loaders integration", () => {
     localStorage.setItem("kpass:monthMeta", JSON.stringify(monthMeta));
 
     // Act
-    const { loadSettings, loadRides, loadMonthMeta, buildMonthIndex } = require("@/lib/storage/loaders");
     const loadedSettings = loadSettings(new Date());
     const loadedRides = loadRides(new Date());
     const loadedMonthMeta = loadMonthMeta(new Date());
@@ -532,7 +537,6 @@ describe("Storage loaders integration", () => {
     localStorage.setItem("kpass:settings", JSON.stringify(settings));
 
     // Act
-    const { loadSettings, loadMonthMeta } = require("@/lib/storage/loaders");
     const loadedSettings = loadSettings(new Date());
     const loadedMonthMeta = loadMonthMeta(new Date());
 

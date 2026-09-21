@@ -1,100 +1,97 @@
-/**
- * Storage Loaders — TDD Implementation
- *
- * This module loads data from localStorage with graceful corruption handling.
- * Each loader:
- * - Reads from localStorage (never writes)
- * - Validates JSON parsing
- * - Treats corrupt/missing data as null or empty
- * - Never throws or calls console.error
- *
- * Tests: src/__tests__/packet-0002.test.ts
- */
+import type {
+  MonthIndex,
+  MonthMeta,
+  MonthSnapshot,
+  RideLog,
+  UserSettings,
+  UserType,
+} from '@/lib/types';
+import { DAILY_MAX } from '@/lib/kpassPolicy';
+import { getMonthKey } from '@/lib/dateKeys';
 
-import type { UserSettings, RideLog, MonthMeta, MonthIndex } from "@/lib/types";
+const USER_TYPES: readonly UserType[] = ['general', 'youth', 'lowIncome'];
 
-/**
- * Load user settings from localStorage.
- *
- * @param date - Current date (for potential validation context)
- * @returns UserSettings if valid JSON exists, null otherwise
- *
- * AC-1: Returns null on corrupt JSON without modifying localStorage or calling setItem
- */
-export function loadSettings(date: Date): UserSettings | null {
-  // TODO: Implement
-  // 1. Try to read 'kpass:settings' from localStorage
-  // 2. Try to JSON.parse the value
-  // 3. Return the parsed UserSettings, or null if missing/corrupt
-  // 4. Never call setItem, removeItem, or console.error
-
-  return null;
+function readJson(key: string): unknown {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null || raw === '') return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
-/**
- * Load ride log from localStorage.
- *
- * @param date - Current date (for potential validation context)
- * @returns RideLog if valid JSON exists, null otherwise
- */
-export function loadRides(date: Date): RideLog | null {
-  // TODO: Implement
-  // 1. Try to read 'kpass:rides' from localStorage
-  // 2. Try to JSON.parse the value
-  // 3. Return the parsed RideLog, or null if missing/corrupt
-  // 4. Never throw or call console.error
-
-  return null;
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-/**
- * Load month snapshots and overwrite each snapshot's id with its month key.
- *
- * @param date - Current date (for potential validation context)
- * @returns MonthMeta with snapshot ids overwritten to month keys, or null
- *
- * AC-2: When months['2026-08'] has id='x', returned snapshot has id='2026-08'
- */
-export function loadMonthMeta(date: Date): MonthMeta | null {
-  // TODO: Implement
-  // 1. Try to read 'kpass:monthMeta' from localStorage
-  // 2. Try to JSON.parse the value
-  // 3. For each month key, overwrite the snapshot's id field to match the key
-  //    Example: months['2026-08'] = { id: 'original-x', ... }
-  //    becomes: months['2026-08'] = { id: '2026-08', ... }
-  // 4. Return the modified MonthMeta, or null if missing/corrupt
-  // 5. Never throw or call console.error
-
-  return null;
+function isIntIn(v: unknown, min: number, max: number): v is number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
 }
 
-/**
- * Build a month index from a record of date strings.
- *
- * Extracts unique month keys (YYYY-MM) from date keys (YYYY-MM-DD),
- * and returns them sorted in descending order.
- *
- * @param input - Record with date keys (YYYY-MM-DD) and any values,
- *                or invalid input (null, string, etc.)
- * @returns MonthIndex with byMonth record and monthsDesc array
- *
- * AC-3: buildMonthIndex('abc') returns {byMonth:{}, monthsDesc:[]}
- * AC-3: buildMonthIndex({'2026-09-01':2,'2026-08-03':1}).monthsDesc = ['2026-09','2026-08']
- */
-export function buildMonthIndex(input: any): MonthIndex {
-  // TODO: Implement
-  // 1. Validate input is a Record<string, unknown>
-  //    If not (null, string, array, etc.), return { byMonth: {}, monthsDesc: [] }
-  // 2. Extract unique month keys from input keys (format: YYYY-MM-DD)
-  //    - For each key, if it matches YYYY-MM-DD format, extract YYYY-MM
-  //    - Skip malformed keys
-  // 3. Sort months in descending order (newest first)
-  // 4. Populate byMonth as Record<string, number> (exact contents TBD by AC tests)
-  // 5. Return { byMonth, monthsDesc }
-  //
-  // Example:
-  //   Input:  { '2026-09-01': 2, '2026-08-03': 1 }
-  //   Output: { byMonth: {...}, monthsDesc: ['2026-09', '2026-08'] }
+function isUserType(v: unknown): v is UserType {
+  return typeof v === 'string' && (USER_TYPES as readonly string[]).includes(v);
+}
 
-  return { byMonth: {}, monthsDesc: [] };
+function validTimes(o: Record<string, unknown>): boolean {
+  const { createdAt, updatedAt } = o;
+  if (typeof createdAt !== 'string' || typeof updatedAt !== 'string') return false;
+  const c = Date.parse(createdAt);
+  const u = Date.parse(updatedAt);
+  return !Number.isNaN(c) && !Number.isNaN(u) && c <= u;
+}
+
+/** 설정 로드. 없거나 손상이면 null (저장소는 건드리지 않는다) */
+export function loadSettings(_now: Date = new Date()): UserSettings | null {
+  const v = readJson('kpass:settings');
+  if (!isRecord(v)) return null;
+  if (v.id !== 'settings' || v.version !== 1) return null;
+  if (!isUserType(v.userType)) return null;
+  if (!isIntIn(v.avgFare, 100, 10000)) return null;
+  if (v.passPrice !== null && !isIntIn(v.passPrice, 1000, 500000)) return null;
+  if (!validTimes(v)) return null;
+  return v as unknown as UserSettings;
+}
+
+/** 탑승 기록 로드. 없거나 손상이면 null */
+export function loadRides(_now: Date = new Date()): RideLog | null {
+  const v = readJson('kpass:rides');
+  if (!isRecord(v)) return null;
+  if (v.id !== 'rides' || v.version !== 1) return null;
+  if (!isRecord(v.days)) return null;
+  if (!validTimes(v)) return null;
+  for (const [k, n] of Object.entries(v.days)) {
+    if (!getMonthKey(k) || !isIntIn(n, 1, DAILY_MAX)) return null;
+  }
+  return v as unknown as RideLog;
+}
+
+/** 월 스냅샷 로드. 각 스냅샷의 id는 months 맵 키로 덮어쓴다 */
+export function loadMonthMeta(_now: Date = new Date()): MonthMeta | null {
+  const v = readJson('kpass:monthMeta');
+  if (!isRecord(v)) return null;
+  if (v.id !== 'monthMeta' || v.version !== 1) return null;
+  if (!isRecord(v.months)) return null;
+  if (!validTimes(v)) return null;
+  const months: Record<string, MonthSnapshot> = {};
+  for (const [key, s] of Object.entries(v.months)) {
+    if (!isRecord(s)) return null;
+    if (!isUserType(s.userType) || !isIntIn(s.avgFare, 100, 10000) || !validTimes(s)) {
+      return null;
+    }
+    months[key] = { ...(s as unknown as MonthSnapshot), id: key };
+  }
+  return { ...(v as unknown as MonthMeta), months };
+}
+
+/** days 맵 → 월별 합계와 최신순 월 목록. 잘못된 입력은 빈 인덱스 */
+export function buildMonthIndex(days: unknown): MonthIndex {
+  const byMonth: Record<string, number> = {};
+  if (!isRecord(days)) return { byMonth, monthsDesc: [] };
+  for (const [key, n] of Object.entries(days)) {
+    const month = getMonthKey(key);
+    if (!month) continue;
+    byMonth[month] = (byMonth[month] ?? 0) + (typeof n === 'number' && Number.isFinite(n) ? n : 0);
+  }
+  return { byMonth, monthsDesc: Object.keys(byMonth).sort().reverse() };
 }
