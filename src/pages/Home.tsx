@@ -4,7 +4,7 @@ import { generateHapticFeedback } from '@apps-in-toss/web-framework';
 import { useNavigate } from 'react-router-dom';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { Card } from '@/components/Card';
-import { AdSlot } from '@/components/AdSlot';
+import { BannerArea } from '@/components/BannerArea';
 import { HomeCards } from '@/components/home/HomeCards';
 import { Paragraph } from '@toss/tds-mobile';
 import { useRides, useSettings } from '@/hooks/kpass';
@@ -40,7 +40,6 @@ export default function Home() {
   const today = new Date();
   const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const count = monthIndex.byMonth[monthKey] ?? 0;
-  const adGroupId = import.meta.env.VITE_TOSS_AD_GROUP_ID as string | undefined;
 
   const handle = (res: StoreResult, okHaptic: 'success' | 'tickWeak') => {
     if (res.ok) {
@@ -81,14 +80,9 @@ export default function Home() {
         today={today}
       />
 
-      <Spacing size={16} />
+      <BannerArea />
 
-      {adGroupId ? (
-        <>
-          <AdSlot adGroupId={adGroupId} />
-          <Spacing size={16} />
-        </>
-      ) : null}
+      <Spacing size={16} />
 
       <Card testId="record-card">
         <Paragraph.Text typography="t5">
