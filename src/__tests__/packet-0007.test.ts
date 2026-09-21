@@ -94,9 +94,9 @@ describe("Copy service: kpassCopy (display text and amount format)", () => {
     it("should handle lowIncome type with correct rate (53%)", () => {
       const result = refundCopy(14, 1500, "lowIncome");
 
-      // calcRefund(21, 1500, 'lowIncome') = floor(21 * 1500 * 0.53 / 10) * 10 = floor(1668.3) * 10 = 16680
+      // calcRefund(21, 1500, 'lowIncome') = floor(21 * 1500 * 53 / 1000) * 10 = floor(1669.5) * 10 = 16690
       expect(result.sub).toBe(
-        "21회까지 7회 남았어요 · 달성하면 예상 16,680원부터 받아요"
+        "21회까지 7회 남았어요 · 달성하면 예상 16,690원부터 받아요"
       );
     });
 
