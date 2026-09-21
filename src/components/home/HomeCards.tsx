@@ -32,7 +32,7 @@ export function HomeCards({ count, settings, today }: HomeCardsProps) {
       <SummaryHero
         testId="progress-card"
         label="이번 달 탑승"
-        value={<CountUp value={safeCount} unit={`/${MIN_RIDES}회`} typography="t1" />}
+        value={<CountUp value={safeCount} unit={`/${MIN_RIDES}회`} typography="t1" testId="month-count" />}
         caption={<MiniBar ratio={safeCount / MIN_RIDES} testId="progress-bar" />}
       />
 

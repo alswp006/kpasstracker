@@ -1,73 +1,153 @@
-import { Top, Paragraph, Spacing, ListRow, Button } from '@toss/tds-mobile';
+import { useState } from 'react';
+import { Top, Spacing, ListRow, Button, Toast } from '@toss/tds-mobile';
+import { generateHapticFeedback } from '@apps-in-toss/web-framework';
 import { useNavigate } from 'react-router-dom';
-import { ScreenScaffold } from '../components/ScreenScaffold';
-import { SummaryHero } from '../components/SummaryHero';
-import { Card } from '../components/Card';
+import { ScreenScaffold } from '@/components/ScreenScaffold';
+import { Card } from '@/components/Card';
+import { AdSlot } from '@/components/AdSlot';
+import { HomeCards } from '@/components/home/HomeCards';
+import { Paragraph } from '@toss/tds-mobile';
+import { useRides, useSettings } from '@/hooks/kpass';
+import { calcInsightInitialRides } from '@/lib/calc/risk';
+import { logClick } from '@/lib/analytics';
+import { DAILY_MAX } from '@/lib/kpassPolicy';
+import type { StoreResult } from '@/lib/types';
 
-/**
- * Golden Home page — 대시보드/탭-루트 골든 레퍼런스.
- *
- * 다른 페이지를 쓸 때 이 패턴을 모방하라:
- * - ScreenScaffold로 감싼다(raw fragment 골격 금지) — safe-area + 100dvh 자동 처리.
- * - 화면 최상단에 SummaryHero로 시각 앵커를 만든다('휑함'의 가장 큰 원인은 앵커 부재).
- *   데이터가 있으면 value에 <Amount value={n} unit="원" typography="t1" />로 핵심 숫자를 크게 박아라.
- * - 1차 진입 액션은 SummaryHero 카드 내부 버튼(display="block", 전체폭)에 둔다.
- *   → 화면 중앙 부유/좌측 글자폭 버튼 금지. 하단 TabBar가 있으면 SubmitFooter와 겹치므로 카드 안에.
- * - 핵심 정보는 raw <div>가 아니라 Card로 묶어 위계를 만든다.
- * - 하단 탭이 필요하면(2~5탭): bottom={<FloatingTabBar items={[{label,path}...]} />}.
- *   ('TDS TabBar'는 존재하지 않는다 — 직접 만들지 말고 FloatingTabBar를 써라.)
- * - 카피는 CLAUDE.md "카피 규칙 — AI 냄새 금지"를 따른다: 기능 나열식 홍보 문구·상투구·
- *   generic 버튼("시작하기") 금지. 이 파일의 예시 문구도 앱 맥락에 맞게 교체 대상이다.
- *
- * Scaffold tokens (replaced by scaffold-toss.ts at project creation):
- *   KPassTracker -> the app's display name
- *   이번 달 대중교통 몇 번 탔지? K-패스 환급 조건(월 21회) 채우는 중인지 매일 확인    -> the one-line description
- */
+type FailReason = Extract<StoreResult, { ok: false }>['reason'];
 
-// ⚠ 이 목록은 골격 예시다 — 앱의 실제 콘텐츠(핵심 지표·최근 기록·바로가기)로 반드시 교체하라.
-// '간편한 사용/빠른 처리' 같은 기능 나열식 홍보 문구는 카피 규칙(CLAUDE.md "AI 냄새 금지") 위반이다.
-// 사용자가 이 화면에서 실제로 확인할 정보를 넣어라 — 아래처럼 데이터가 사는 행으로.
-const HIGHLIGHTS = [
-  { title: '오늘', description: '아직 기록이 없어요' },
-  { title: '이번 주', description: '기록 3건 · 평균 12분' },
-];
+const FAIL_MESSAGE: Record<FailReason, string> = {
+  NO_SETTINGS: '먼저 K-패스 유형을 설정해 주세요',
+  INVALID_DATE: '오늘 날짜를 확인하지 못했어요',
+  DAILY_MAX: `하루 최대 ${DAILY_MAX}회까지 기록할 수 있어요`,
+  BELOW_ZERO: '오늘 기록이 0회라 되돌릴 게 없어요',
+  QUOTA: '저장 공간이 부족해 기록하지 못했어요',
+};
+
+function haptic(type: 'success' | 'tickWeak' | 'tickStrong') {
+  try {
+    Promise.resolve(generateHapticFeedback({ type } as Parameters<typeof generateHapticFeedback>[0])).catch(() => {});
+  } catch {
+    /* WebView 밖 — 무시 */
+  }
+}
 
 export default function Home() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
+  const { todayCount, monthIndex, increment, decrement } = useRides();
+  const [toastText, setToastText] = useState<string | null>(null);
+
+  const today = new Date();
+  const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const count = monthIndex.byMonth[monthKey] ?? 0;
+  const adGroupId = import.meta.env.VITE_TOSS_AD_GROUP_ID as string | undefined;
+
+  const handle = (res: StoreResult, okHaptic: 'success' | 'tickWeak') => {
+    if (res.ok) {
+      haptic(okHaptic);
+      return;
+    }
+    haptic('tickStrong');
+    if (res.reason === 'NO_SETTINGS') {
+      navigate('/onboarding', { replace: true });
+      return;
+    }
+    setToastText(FAIL_MESSAGE[res.reason]);
+  };
 
   return (
     <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>KPassTracker</Top.TitleParagraph>} />}
+      top={
+        <Top
+          title={<Top.TitleParagraph>이번 달 K-패스</Top.TitleParagraph>}
+          right={
+            <div style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center' }}>
+              <Button
+                variant="weak"
+                size="small"
+                aria-label="설정"
+                onClick={() => navigate('/settings')}
+              >
+                설정
+              </Button>
+            </div>
+          }
+        />
+      }
     >
-      {/* 시각 앵커: 헤드라인 + 카드 내 진입 버튼(부유 금지, display="block" 전체폭).
-          데이터 앱이면 value를 <Amount typography="t1" />(핵심 숫자)로 교체하라. */}
-      <SummaryHero
-        label="KPassTracker"
-        value={<Paragraph.Text typography="t2">이번 달 대중교통 몇 번 탔지? K-패스 환급 조건(월 21회) 채우는 중인지 매일 확인</Paragraph.Text>}
-        caption="로그인 없이 바로 쓸 수 있어요"
-        action={
-          // 라벨은 앱의 핵심 행동 동사로 교체하라 — "연봉 계산하기"/"기록 남기기" 등.
-          // generic "시작하기"/"확인"은 카피 규칙 위반. onClick도 실제 첫 화면 경로로.
-          <Button variant="fill" display="block" onClick={() => navigate('/')}>
-            첫 결과 보기
-          </Button>
-        }
-        testId="home-hero"
+      <HomeCards
+        count={count}
+        settings={settings ?? { userType: 'general', avgFare: 0 }}
+        today={today}
       />
 
-      <Spacing size={24} />
+      <Spacing size={16} />
 
-      {/* 핵심 정보는 Card로 묶기(raw div 금지) — 위계 생성 */}
-      <Card testId="home-highlights">
-        {HIGHLIGHTS.map((h, idx) => (
-          <ListRow
-            key={idx}
-            contents={<ListRow.Texts type="2RowTypeA" top={h.title} bottom={h.description} />}
-          />
-        ))}
+      {adGroupId ? (
+        <>
+          <AdSlot adGroupId={adGroupId} />
+          <Spacing size={16} />
+        </>
+      ) : null}
+
+      <Card testId="record-card">
+        <Paragraph.Text typography="t5">
+          <span data-testid="today-count">{`오늘 ${todayCount}회`}</span>
+        </Paragraph.Text>
+        <Spacing size={12} />
+        <Button
+          variant="fill"
+          size="xlarge"
+          display="block"
+          data-testid="record-button"
+          onClick={() => {
+            logClick('ride_increment');
+            handle(increment(), 'success');
+          }}
+        >
+          +1 탔어요
+        </Button>
+        <Spacing size={8} />
+        <Button
+          variant="weak"
+          display="block"
+          data-testid="undo-button"
+          aria-label="−1 되돌리기"
+          onClick={() => handle(decrement(), 'tickWeak')}
+        >
+          −1
+        </Button>
       </Card>
 
+      <Spacing size={8} />
+
+      <ListRow
+        contents={<ListRow.Texts type="1RowTypeA" top="이번 달 기록" />}
+        withArrow
+        onClick={() => navigate('/records')}
+      />
+
+      <Spacing size={8} />
+
+      <Button
+        variant="weak"
+        display="block"
+        onClick={() => {
+          logClick('insight_compare');
+          navigate('/insight', { state: { rideCount: calcInsightInitialRides(count, today) } });
+        }}
+      >
+        정기권과 비교하기
+      </Button>
+
       <Spacing size={24} />
+
+      <Toast
+        position="bottom"
+        open={toastText !== null}
+        text={toastText ?? ''}
+        onClose={() => setToastText(null)}
+      />
     </ScreenScaffold>
   );
 }
