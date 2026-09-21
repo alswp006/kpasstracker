@@ -71,8 +71,88 @@ export type formatDisplayFn = (label: string, amount: number) => string;
 
 ## Shared Types Contract (IMPORT these, do NOT redefine)
 ```typescript
-// Domain types — add your app-specific types here
-export {};
+// Domain types (SPEC) — 타입 전용, 런타임 코드 없음
+export type UserType = 'general' | 'youth' | 'lowIncome';
+
+export interface UserSettings {
+  id: 'settings';
+  version: 1;
+  userType: UserType;
+  avgFare: number;
+  passPrice: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RideLog {
+  id: 'rides';
+  version: 1;
+  days: Record<string, number>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MonthSnapshot {
+  id: string;
+  userType: UserType;
+  avgFare: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MonthMeta {
+  id: 'monthMeta';
+  version: 1;
+  months: Record<string, MonthSnapshot>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MonthIndex {
+  byMonth: Record<string, number>;
+  monthsDesc: string[];
+}
+
+export type RiskStatus = 'achieved' | 'danger' | 'not_started' | 'on_track' | 'warning';
+
+export interface RiskResult {
+  status: RiskStatus;
+  projection: number;
+  remaining: number;
+  remainingDays: number;
+}
+
+export interface MonthSummary {
+  month: string;
+  count: number;
+  achieved: boolean;
+  refund: number;
+  usedFallback: boolean;
+}
+
+export interface PassComparison {
+  kpassNetCost: number;
+  passPrice: number;
+  winner: 'kpass' | 'pass' | 'even';
+  diff: number;
+}
+
+export type StoreResult =
+  | { ok: true; count: number }
+  | { ok: false; reason: 'NO_SETTINGS' | 'INVALID_DATE' | 'DAILY_MAX' | 'BELOW_ZERO' | 'QUOTA' };
+
+export type SaveSettingsInput = Pick<UserSettings, 'userType' | 'avgFare' | 'passPrice'>;
+
+export type SaveResult = { ok: true } | { ok: false; reason: 'QUOTA' };
+
+// 라우트 state — 직접 진입 시 null일 수 있다
+export interface RouteState {
+  [key: string]: unknown;
+}
+
+export interface InsightRouteState {
+  rideCount?: number;
+}
 
 ```
 
@@ -96,7 +176,11 @@ export {};
     TossRewardAd.tsx
   hooks/
   lib/
+    __tests__/
     analytics.ts
+    contract.ts
+    dateKeys.ts
+    kpassPolicy.ts
     review.ts
     share.ts
     storage.ts
@@ -118,9 +202,13 @@ export {};
 
 ### Exports (src/lib/)
 - analytics.ts: export type LogFields = Record<string, string | number | boolean | null>; export const DWELL_MS = 3000; export function fireAndForget(call: () => unknown): void; export function logScreen(page: string, extra?: LogFields): void; export function logClick(name: string, extra?: LogFields): void; export function logImpression(name: string, extra?: LogFields): void; export function useScreenLog(page: string): void
+- contract.ts: export type Ride =; export type Settings =; export type MonthKey = string; export type getMonthKeyFn = (date: string) => string; export type parseYearMonthFn = (key: string) =>; export type loadRidesFn = () => Promise<Ride[]>; export type loadSettingsFn = () => Promise<Settings | null>; export type buildMonthIndexFn = (rides: Ride[]) => Map<string, Ride[]>
+- dateKeys.ts: export function toDateKey(d: Date = new Date()): string; export function isValidRecordDate(key: string, now: Date = new Date()): boolean; export function formatDayLabel(key: string): string; export function getMonthKey(date: string): string; export function parseYearMonth(key: string):
+- kpassPolicy.ts: export const RETENTION_MONTHS = 12; export const DAILY_MAX = 20; export function cutoffMonth(now: Date = new Date()): string
 - review.ts: export function requestReviewOnce(key: string = REVIEW_REQUESTED_KEY): void
 - share.ts: export interface ShareAppOptions; export async function shareApp(opts: ShareAppOptions): Promise<void>
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
+- types.ts: export type UserType = 'general' | 'youth' | 'lowIncome'; export interface UserSettings; export interface RideLog; export interface MonthSnapshot; export interface MonthMeta; export interface MonthIndex; export type RiskStatus = 'achieved' | 'danger' | 'not_started' | 'on_track' | 'warning'; export interface RiskResult
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
 ### Components (src/components/)
@@ -138,82 +226,10 @@ export {};
 - SummaryHero.tsx: SummaryHero
 - TossPurchase.tsx: TossPurchase
 - TossRewardAd.tsx: TossRewardAd
+
+### Module Dependencies (import graph)
+  lib/dateKeys.ts → imports: lib/kpassPolicy
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/lib/analytics.ts
-export type LogFields = Record<string, string | number | boolean | null>;
-export const DWELL_MS = 3000;
-export function fireAndForget(call: () => unknown): void {
-export function logScreen(page: string, extra?: LogFields): void {
-export function logClick(name: string, extra?: LogFields): void {
-export function logImpression(name: string, extra?: LogFields): void {
-export function useScreenLog(page: string): void {
-
-// src/lib/contract.ts
-export type Ride = { id: string; date: string; amountKrw: number; viaPass?: boolean };
-export type Settings = { monthlyPassPrice: number; dailyPassPrice: number; singleRidePrice: number; refundRuleDay?: number; userId?: string };
-export type MonthKey = string;
-export type getMonthKeyFn = (date: string) => string;
-export type parseYearMonthFn = (key: string) => { year: number; month: number };
-export type loa
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(4), general(13), testing(2), ui(3)
-
-Key lessons (verify against actual code before applying):
-- [general] 파일 생성 전 디렉토리 구조 확인 — mkdir -p로 경로 보장 (60% · 타 앱 1회 — 맹신 금지)
-- [general] 화면·라우팅 등 소비자 모듈은 그것이 import하는 생산자 모듈이 병합된 뒤에만 병합하고, 순서를 지킬 수 없으면 소비자 병합과 동시에 최소 플레이스홀더를 만들어 매 병합 직후 타입체크와 빌드가 항상 통과하도록 유지하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 전역 라우팅·탭바·Provider 배선은 개별 화면보다 먼저(초반 20% 안에) 완료하고 미구현 화면은 스텁 라우트로 연결해, 시간 예산이 소진돼도 앱이 항상 실행 가능한 상태를 유지하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
+## Already Implemented (do NOT duplicate or overwrite)
+- 0001: Shared types, policy constants and date key helpers (files: src/lib/types.ts, src/lib/kpassPolicy.ts, src/lib/dateKeys.ts, src/lib/__tests__/dateKeys.test.ts)
