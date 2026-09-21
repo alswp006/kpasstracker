@@ -1,0 +1,35 @@
+{
+  "koreanName": "K패스환급",
+  "englishName": "KPass Refund",
+  "appName": "kpasstracker",
+  "ageRating": "만 19세 이상",
+  "appType": "비게임",
+  "supportEmail": "support@aifactory.dev",
+  "category": {
+    "primary": "생활"
+  },
+  "subtitle": "환급받을 횟수 매일 확인",
+  "description": "앱을 열면 이번 달 K-패스 탑승 횟수가 크게 표시됩니다. 오늘 탑승했다면 '+1' 버튼 한 번 누르면 됩니다. 순간 남은 횟수와 환급 대상 여부가 바뀝니다. 지난달에 이미 환급받았다면 그 금액도 기록에 남습니다. 환급받을 경우의 예상액도 확인하고, 정기권과 비교한 손익도 계산해볼 수 있습니다. 월말이 임박하면 미달 위험을 알려줍니다.",
+  "searchKeywords": [
+    "K패스",
+    "환급",
+    "대중교통",
+    "교통카드",
+    "K패스환급",
+    "횟수추적",
+    "환급액계산",
+    "정기권비교"
+  ],
+  "keyFeatures": [
+    "한 버튼으로 탑승 횟수 기록",
+    "월 환급 진행률 실시간 확인",
+    "유형별 환급액 자동 계산",
+    "정기권과의 손익 비교"
+  ],
+  "_notes": {
+    "appTypeSuspected": false,
+    "appTypeReasons": [],
+    "reviewLevel": null,
+    "reviewReasons": []
+  }
+}
