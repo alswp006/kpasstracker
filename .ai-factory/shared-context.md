@@ -204,6 +204,7 @@ export interface InsightRouteState {
     Records.tsx
     SettingsForm.tsx
     __TdsGallery.tsx
+    __tests__/
   styles/
     globals.css
     reward-ad.css
@@ -216,7 +217,7 @@ export interface InsightRouteState {
 - calc/refund.ts: export function calcRefund(rides: unknown, fare: unknown, userType: unknown): number; export function calcKpassNetCost(rides: unknown, fare: unknown, userType: unknown): number; export function calcBreakEven(fare: unknown, userType: unknown, passPrice: unknown): number | null; export function calcNetCost(rides: Ride[], settings: Settings): number
 - calc/risk.ts: export function calcProjection(count: number, now: Date = new Date()): number; export function calcRisk(count: number, now: Date = new Date()): RiskResult; export function comparePass(kpassNetCost: number, passPrice: number | null, _rides?: number): PassComparison; export function calcInsightInitialRides(count: number, now: Date = new Date()): number
 - contract.ts: export type Ride =; export type Settings =; export type MonthKey = string; export type getMonthKeyFn = (date: string) => string; export type parseYearMonthFn = (key: string) =>; export type loadRidesFn = () => Promise<Ride[]>; export type loadSettingsFn = () => Promise<Settings | null>; export type buildMonthIndexFn = (rides: Ride[]) => Map<string, Ride[]>
-- dateKeys.ts: export function toDateKey(d: Date = new Date()): string; export function isValidRecordDate(key: string, now: Date = new Date()): boolean; export function formatDayLabel(key: string): string; export function getMonthKey(date: string): string; export function parseYearMonth(key: string):
+- dateKeys.ts: export function toDateKey(d: Date = new Date()): string; export function isValidRecordDate(key: string, now: Date = new Date()): boolean; export function formatDayLabel(key: string): string; export function getMonthKey(date: string): string; export function parseYearMonth(key: string):; export function recentMonthKeys(today: Date = new Date(), n = 6): string[]
 - kpassCalc.ts: export interface MonthSummary; export function calcMonthSummary( rides: unknown, fare: unknown, userType: unknown, passPrice: unknown = null, now: Date
 - kpassCopy.ts: export interface RiskCopy; export interface RefundCopy; export interface VerdictCopy; export function formatWon(n: unknown): string; export function formatAmount(amount: number, opts?:; export function formatDisplay(label: string, amount: number): string; export function riskCopy(count: number, now: Date = new Date()): RiskCopy; export function refundCopy(count: number, fare: number, userType: UserType): RefundCopy
 - kpassPolicy.ts: export const RETENTION_MONTHS = 12; export const DAILY_MAX = 20; export function cutoffMonth(now: Date = new Date()): string; export const MIN_RIDES = 21; export const MAX_REFUND_RIDES = 60; export const REFUND_RATE_PCT =
@@ -226,7 +227,7 @@ export interface InsightRouteState {
 - storage/loaders.ts: export function loadSettings(_now: Date = new Date()): UserSettings | null; export function loadRides(_now: Date = new Date()): RideLog | null; export function loadMonthMeta(_now: Date = new Date()): MonthMeta | null; export function buildMonthIndex(days: unknown): MonthIndex
 - storage/writes.ts: export function writePair( key1: string, val1: string | null, key2: string, val2: string | null, ): SaveResult; export function saveSettings(input: SaveSettingsInput): SaveResult; export function setDayCount(date: string, count: number): StoreResult; export function incrementToday(): StoreResult; export function decrementToday(): StoreResult
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
-- types.ts: export type UserType = 'general' | 'youth' | 'lowIncome'; export interface UserSettings; export interface RideLog; export interface MonthSn...
+- types.ts: export type UserType = 'general' | 'youth' | 'lo...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -241,91 +242,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0011: S4 insight ① input-state hook and free tier (files: src/hooks/useInsightInputs.ts, src/components/insight/InsightFree.tsx, src/components/insight/__tests__/InsightFree.test.tsx)
 - 0008: S1 onboarding/settings shared form (SettingsForm) (files: src/pages/SettingsForm.tsx, src/pages/__tests__/SettingsForm.test.tsx)
 - 0010: S2 Home page (one-tap record + navigation) (files: src/pages/Home.tsx, src/pages/__tests__/Home.test.tsx)
-
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/components/home/HomeCards.tsx
-export interface HomeCardsProps {
-export function HomeCards({ count, settings, today }: HomeCardsProps) {
-
-// src/components/insight/InsightFree.tsx
-export function InsightFree() {
-
-// src/hooks/kpass.tsx
-export function KpassProvider({ children }: { children: ReactNode }) {
-export function useSettings() {
-export function useRides(): {
-export function useMonthMeta() {
-
-// src/hooks/useInsightInputs.ts
-export const RIDE_MIN = 0;
-export const RIDE_MAX = 120;
-export const PRICE_MIN = 1000;
-export const PRICE_MAX = 500000;
-export function parseIn(text: string, min: number, max: number): number | null {
-export function useInsightInputs() {
-
-// src/lib/analytics.ts
-export type LogFields = Record<string, string | number | boolean | null>;
-export const DWELL_MS = 3000;
-export function fireAndForget(call: () => unknown): void {
-export fu
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(4), general(13), testing(2), ui(3)
-
-Key lessons (verify against actual code before applying):
-- [general] 파일 생성 전 디렉토리 구조 확인 — mkdir -p로 경로 보장 (60% · 타 앱 1회 — 맹신 금지)
-- [general] 화면·라우팅 등 소비자 모듈은 그것이 import하는 생산자 모듈이 병합된 뒤에만 병합하고, 순서를 지킬 수 없으면 소비자 병합과 동시에 최소 플레이스홀더를 만들어 매 병합 직후 타입체크와 빌드가 항상 통과하도록 유지하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 전역 라우팅·탭바·Provider 배선은 개별 화면보다 먼저(초반 20% 안에) 완료하고 미구현 화면은 스텁 라우트로 연결해, 시간 예산이 소진돼도 앱이 항상 실행 가능한 상태를 유지하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
+- 0012: S4 Insight page (locked tier + reward gate) (files: src/pages/Insight.tsx, src/components/insight/InsightLocked.tsx, src/pages/__tests__/Insight.test.tsx)
