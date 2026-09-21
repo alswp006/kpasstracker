@@ -1,5 +1,7 @@
 import type { PassComparison, RiskResult } from '@/lib/types';
 import { MIN_RIDES } from '@/lib/kpassPolicy';
+import { calcKpassNetCost } from './refund';
+import { isValidCount, isValidPositive, isValidType } from './guards';
 
 /** 하루 현실적인 최대 이용 횟수(출퇴근 왕복) — 남은 날로 채울 수 있는지 판단 */
 const RIDES_PER_DAY = 2;
@@ -14,11 +16,11 @@ function monthProgress(now: Date): { day: number; daysInMonth: number } {
   return { day: now.getDate(), daysInMonth };
 }
 
-/** 지금 페이스로 월말까지 이용할 횟수 = floor(count / 경과일 × 월 일수) */
+/** 지금 페이스로 월말까지 이용할 횟수 = round(count / 경과일 × 월 일수) */
 export function calcProjection(count: number, now: Date = new Date()): number {
   const c = normCount(count);
   const { day, daysInMonth } = monthProgress(now);
-  const result = Math.floor((c / day) * daysInMonth);
+  const result = Math.round((c / day) * daysInMonth);
   return Number.isFinite(result) ? result : 0;
 }
 
@@ -40,12 +42,15 @@ export function calcRisk(count: number, now: Date = new Date()): RiskResult {
   return { status, projection, remaining, remainingDays };
 }
 
-/** K-패스 실부담액과 정기권 가격 비교. 정기권 가격이 없으면 비교 불가 → even */
-export function comparePass(kpassNetCost: number, passPrice: number | null, _rides?: number): PassComparison {
-  if (typeof passPrice !== 'number' || !Number.isFinite(passPrice)) {
+/** K-패스 실부담액과 정기권 가격 비교. 입력이 잘못되면 비교 불가 → even */
+export function comparePass(rides: number, fare: number, userType: unknown, passPrice: number | null): PassComparison {
+  if (
+    typeof passPrice !== 'number' || !Number.isFinite(passPrice) || passPrice <= 0 ||
+    !isValidType(userType) || !isValidCount(rides) || !isValidPositive(fare)
+  ) {
     return { kpassNetCost: 0, passPrice: 0, winner: 'even', diff: 0 };
   }
-  const cost = Number.isFinite(kpassNetCost) ? kpassNetCost : 0;
+  const cost = calcKpassNetCost(rides, fare, userType);
   const diff = Math.abs(cost - passPrice);
   const winner = cost < passPrice ? 'kpass' : cost > passPrice ? 'pass' : 'even';
   return { kpassNetCost: cost, passPrice, winner, diff };

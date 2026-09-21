@@ -57,7 +57,7 @@ describe("Calculation service ②: projection, risk, pass comparison and kpassCa
   // AC-2: comparePass returns default values when passPrice is null or NaN
   describe("AC-2: comparePass with null/NaN passPrice", () => {
     it("AC-2[P0]: comparePass returns {kpassNetCost:0, passPrice:0, winner:'even', diff:0} when passPrice is null", () => {
-      const result = comparePass(0, null, 0);
+      const result = comparePass(0, 1500, 'general', null);
       expect(result.kpassNetCost).toBe(0);
       expect(result.passPrice).toBe(0);
       expect(result.winner).toBe("even");
@@ -65,7 +65,7 @@ describe("Calculation service ②: projection, risk, pass comparison and kpassCa
     });
 
     it("AC-2[P0]: comparePass returns {kpassNetCost:0, passPrice:0, winner:'even', diff:0} when passPrice is NaN", () => {
-      const result = comparePass(0, NaN, 0);
+      const result = comparePass(0, 1500, 'general', NaN);
       expect(result.kpassNetCost).toBe(0);
       expect(result.passPrice).toBe(0);
       expect(result.winner).toBe("even");
@@ -73,23 +73,23 @@ describe("Calculation service ②: projection, risk, pass comparison and kpassCa
     });
 
     it("comparePass returns winner='kpass' when kpassNetCost < passPrice", () => {
-      const result = comparePass(50000, 100000, 0);
+      const result = comparePass(30, 1500, "general", 55000);
       expect(result.winner).toBe("kpass");
-      expect(result.kpassNetCost).toBe(50000);
-      expect(result.passPrice).toBe(100000);
-      expect(result.diff).toBe(50000);
+      expect(result.kpassNetCost).toBe(36000);
+      expect(result.passPrice).toBe(55000);
+      expect(result.diff).toBe(19000);
     });
 
     it("comparePass returns winner='pass' when passPrice < kpassNetCost", () => {
-      const result = comparePass(100000, 50000, 0);
+      const result = comparePass(30, 1500, "general", 30000);
       expect(result.winner).toBe("pass");
-      expect(result.kpassNetCost).toBe(100000);
-      expect(result.passPrice).toBe(50000);
-      expect(result.diff).toBe(50000);
+      expect(result.kpassNetCost).toBe(36000);
+      expect(result.passPrice).toBe(30000);
+      expect(result.diff).toBe(6000);
     });
 
     it("comparePass returns winner='even' when costs are equal", () => {
-      const result = comparePass(75000, 75000, 0);
+      const result = comparePass(30, 1500, "general", 36000);
       expect(result.winner).toBe("even");
       expect(result.diff).toBe(0);
     });
@@ -157,7 +157,7 @@ describe("Calculation service ②: projection, risk, pass comparison and kpassCa
     });
 
     it("comparePass handles zero costs", () => {
-      const result = comparePass(0, 0, 0);
+      const result = comparePass(0, 1500, "general", 0);
       expect(result.diff).toBe(0);
       expect(result.winner).toBe("even");
     });

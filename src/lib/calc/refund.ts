@@ -19,11 +19,11 @@ export function calcKpassNetCost(rides: unknown, fare: unknown, userType: unknow
   return Number.isFinite(cost) ? cost : 0;
 }
 
-/** K-패스 실부담액이 정기권 가격에 처음 도달하는 이용 횟수. 상한 내 없으면 null */
+/** K-패스 실부담액이 정기권 가격을 처음 넘는 이용 횟수(0~200회 탐색). 없으면 null */
 export function calcBreakEven(fare: unknown, userType: unknown, passPrice: unknown): number | null {
   if (!isValidPositive(fare) || !isValidType(userType) || !isValidPositive(passPrice)) return null;
-  for (let n = 1; n <= MAX_REFUND_RIDES; n++) {
-    if (calcKpassNetCost(n, fare, userType) >= passPrice) return n;
+  for (let n = 0; n <= 200; n++) {
+    if (calcKpassNetCost(n, fare, userType) > passPrice) return n;
   }
   return null;
 }

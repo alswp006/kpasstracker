@@ -149,7 +149,7 @@ describe("S4 insight ① input-state hook and free tier", () => {
     const card = screen.getByTestId("verdict-card");
     expect(within(card).getByText("K-패스와 정기권 비용이 같아요")).toBeInTheDocument();
     expect(within(card).getByRole("status")).toHaveTextContent("동일");
-    expect(comparePass).toHaveBeenCalledWith(36000, 36000, expect.anything());
+    expect(comparePass).toHaveBeenCalledWith(30, expect.any(Number), expect.anything(), 36000);
     expect(screen.queryByText("정기권 가격을 넣으면 어느 쪽이 이득인지 알려드려요")).toBeNull();
   });
 

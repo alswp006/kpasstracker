@@ -34,6 +34,6 @@ export function calcMonthSummary(
     netCost,
     risk: calcRisk(count, now),
     breakEven: calcBreakEven(fare, userType, price),
-    comparison: comparePass(netCost, price, count),
+    comparison: comparePass(count, fare as number, userType, price),
   };
 }

@@ -25,7 +25,7 @@ export function InsightFree({ inputs }: { inputs?: InsightInputs } = {}) {
 
   const verdict = useMemo(() => {
     if (rides === null || price === null) return null;
-    const c = comparePass(calcKpassNetCost(rides, fare, userType), price, rides);
+    const c = comparePass(rides, fare, userType, price);
     return verdictCopy(c.winner, c.diff);
   }, [rides, price, fare, userType]);
 
