@@ -49,3 +49,13 @@ export function parseYearMonth(key: string): { year: number; month: number } {
   if (month < 1 || month > 12) return { year: 0, month: 0 };
   return { year: Number(m[1]), month };
 }
+
+/** 이번 달 포함 최근 n개월 키('YYYY-MM'), 오래된 달부터 */
+export function recentMonthKeys(today: Date = new Date(), n = 6): string[] {
+  const keys: string[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    keys.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
+  }
+  return keys;
+}

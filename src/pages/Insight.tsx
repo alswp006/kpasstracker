@@ -1,14 +1,24 @@
-// @ai-factory:placeholder
-// 배선 선행(wiring-first)이 깐 자리 페이지다 — App.tsx에 `/insight`로 이미 연결돼 있다.
-// 이 화면을 담당하는 패킷은 이 파일을 **통째로 교체**하라(위 마커 주석 포함 — 마커가 남으면 산출물로 인정되지 않는다).
-import { PageShell } from "../components/PageShell";
+import { Spacing, Top } from '@toss/tds-mobile';
+import { ScreenScaffold } from '@/components/ScreenScaffold';
+import { TossRewardAd } from '@/components/TossRewardAd';
+import { InsightFree } from '@/components/insight/InsightFree';
+import { InsightLocked } from '@/components/insight/InsightLocked';
+
+/**
+ * S4 분석 (/insight) — 핵심 결과 화면.
+ * 무료 층(입력·환급액·판정)은 게이트 바깥, 잠금 층(시나리오·손익분기·추이)만 리워드 광고 안에 둔다.
+ * 화면 전체를 게이트로 감싸지 않는다 — 광고가 없어도 핵심 답은 항상 보여야 한다.
+ * 슬롯 ID가 없거나 광고 로드가 실패하면 TossRewardAd가 스스로 열린다(fail-open).
+ */
 export default function Insight() {
   return (
-    <PageShell>
-      <main data-testid="placeholder-insight">
-        <h1>정기권 비교 시뮬레이션·인사이트 , 리워드 게이트</h1>
-        <p>이 화면은 준비 중이에요.</p>
-      </main>
-    </PageShell>
+    <ScreenScaffold top={<Top title={<Top.TitleParagraph>K-패스 vs 정기권</Top.TitleParagraph>} />}>
+      <InsightFree />
+      <Spacing size={24} />
+      <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID ?? ''}>
+        <InsightLocked />
+      </TossRewardAd>
+      <Spacing size={24} />
+    </ScreenScaffold>
   );
 }
