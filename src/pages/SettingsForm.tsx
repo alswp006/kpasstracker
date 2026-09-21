@@ -119,10 +119,23 @@ export default function SettingsForm({ mode = "onboarding" }: { mode?: Mode }) {
       {TYPES.map((t) => (
         <ListRow
           key={t.value}
-          contents={<ListRow.Texts type="1RowTypeA" top={t.label} />}
+          contents={
+            <ListRow.Texts
+              type="1RowTypeA"
+              top={
+                userType === t.value ? (
+                  <Paragraph.Text typography="t5" fontWeight="bold" color="var(--tds-color-blue500)">
+                    {t.label}
+                  </Paragraph.Text>
+                ) : (
+                  t.label
+                )
+              }
+            />
+          }
           right={
             userType === t.value ? (
-              <Paragraph.Text typography="t5" color="var(--tds-color-blue500)">
+              <Paragraph.Text typography="t3" fontWeight="bold" color="var(--tds-color-blue500)">
                 ✓
               </Paragraph.Text>
             ) : undefined
@@ -172,7 +185,7 @@ export default function SettingsForm({ mode = "onboarding" }: { mode?: Mode }) {
           />
         </>
       )}
-      <Spacing size={96} />
+      <Spacing size={120} />
       <SubmitFooter
         label={isSettings ? "저장" : "시작하기"}
         onClick={submit}
