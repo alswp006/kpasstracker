@@ -2,15 +2,16 @@ import { useMemo } from 'react';
 import { Badge, Paragraph, Spacing, TextField } from '@toss/tds-mobile';
 import { Card } from '@/components/Card';
 import { SummaryHero } from '@/components/SummaryHero';
-import { PRICE_MAX, PRICE_MIN, RIDE_MAX, RIDE_MIN, parseIn, useInsightInputs } from '@/hooks/useInsightInputs';
+import { PRICE_MAX, PRICE_MIN, RIDE_MAX, RIDE_MIN, parseIn, useInsightInputs, type InsightInputs } from '@/hooks/useInsightInputs';
 import { useSettings } from '@/hooks/kpass';
 import { calcKpassNetCost, calcRefund } from '@/lib/calc/refund';
 import { comparePass } from '@/lib/calc/risk';
 import { formatWon, verdictCopy } from '@/lib/kpassCopy';
 
-export function InsightFree() {
+export function InsightFree({ inputs }: { inputs?: InsightInputs } = {}) {
   const { settings } = useSettings();
-  const inp = useInsightInputs();
+  const own = useInsightInputs();
+  const inp = inputs ?? own;
 
   const fare = settings?.avgFare ?? 0;
   const userType = settings?.userType ?? 'general';
@@ -54,7 +55,7 @@ export function InsightFree() {
       <TextField
         variant="box"
         label="월 정기권 가격"
-        placeholder="예: 62,000"
+        placeholder="월 정기권 가격 (예: 62,000)"
         suffix="원"
         inputMode="numeric"
         enterKeyHint="done"

@@ -1,6 +1,7 @@
 import { Spacing, Top } from '@toss/tds-mobile';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { TossRewardAd } from '@/components/TossRewardAd';
+import { useInsightInputs } from '@/hooks/useInsightInputs';
 import { InsightFree } from '@/components/insight/InsightFree';
 import { InsightLocked } from '@/components/insight/InsightLocked';
 
@@ -11,12 +12,13 @@ import { InsightLocked } from '@/components/insight/InsightLocked';
  * 슬롯 ID가 없거나 광고 로드가 실패하면 TossRewardAd가 스스로 열린다(fail-open).
  */
 export default function Insight() {
+  const inputs = useInsightInputs();
   return (
     <ScreenScaffold top={<Top title={<Top.TitleParagraph>K-패스 vs 정기권</Top.TitleParagraph>} />}>
-      <InsightFree />
+      <InsightFree inputs={inputs} />
       <Spacing size={24} />
       <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID ?? ''}>
-        <InsightLocked />
+        <InsightLocked inputs={inputs} />
       </TossRewardAd>
       <Spacing size={24} />
     </ScreenScaffold>

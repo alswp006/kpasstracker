@@ -1,7 +1,7 @@
 import { ListRow, Paragraph, Spacing } from '@toss/tds-mobile';
 import { Card } from '@/components/Card';
 import { Sparkline } from '@/components/Sparkline';
-import { PRICE_MAX, PRICE_MIN, RIDE_MAX, RIDE_MIN, parseIn, useInsightInputs } from '@/hooks/useInsightInputs';
+import { PRICE_MAX, PRICE_MIN, RIDE_MAX, RIDE_MIN, parseIn, useInsightInputs, type InsightInputs } from '@/hooks/useInsightInputs';
 import { useRides, useSettings } from '@/hooks/kpass';
 import { calcBreakEven, calcKpassNetCost, calcRefund } from '@/lib/calc/refund';
 import { recentMonthKeys } from '@/lib/dateKeys';
@@ -14,10 +14,11 @@ const TYPES: { type: UserType; name: string }[] = [
   { type: 'lowIncome', name: '저소득' },
 ];
 
-export function InsightLocked() {
+export function InsightLocked({ inputs }: { inputs?: InsightInputs } = {}) {
   const { settings } = useSettings();
   const { monthIndex } = useRides();
-  const inp = useInsightInputs();
+  const own = useInsightInputs();
+  const inp = inputs ?? own;
 
   const fare = settings?.avgFare ?? 0;
   const userType = settings?.userType ?? 'general';

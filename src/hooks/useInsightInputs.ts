@@ -51,3 +51,5 @@ export function useInsightInputs() {
     setPassPrice: (v: string) => setPassPrice(digitsOnly(v)),
   };
 }
+
+export type InsightInputs = ReturnType<typeof useInsightInputs>;
