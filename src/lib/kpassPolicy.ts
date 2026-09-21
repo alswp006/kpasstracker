@@ -11,3 +11,16 @@ export function cutoffMonth(now: Date = new Date()): string {
   const m = (total % 12) + 1;
   return `${y}-${String(m).padStart(2, '0')}`;
 }
+
+/** 환급 최소 이용 횟수 (미만이면 환급 0) */
+export const MIN_RIDES = 21;
+
+/** 환급 산정 상한 이용 횟수 */
+export const MAX_REFUND_RIDES = 60;
+
+/** 유형별 환급률(%) — 정수 퍼센트로 두어 부동소수 오차를 피한다 */
+export const REFUND_RATE_PCT = {
+  general: 20,
+  youth: 30,
+  lowIncome: 53,
+} as const;
