@@ -32,8 +32,8 @@ export function calcRisk(count: number, now: Date = new Date()): RiskResult {
 
   let status: RiskResult['status'];
   if (c >= MIN_RIDES) status = 'achieved';
-  else if (c === 0) status = 'not_started';
   else if (remaining > remainingDays * RIDES_PER_DAY) status = 'danger';
+  else if (c === 0) status = 'not_started';
   else if (projection >= MIN_RIDES) status = 'on_track';
   else status = 'warning';
 

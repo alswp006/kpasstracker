@@ -50,7 +50,9 @@ export function formatDisplay(label: string, amount: number): string {
 
 /** 홈 위험도 카드 문구 (S2 표) */
 export function riskCopy(count: number, now: Date = new Date()): RiskCopy {
-  const { status, projection, remaining, remainingDays } = calcRisk(count, now);
+  const { status: rawStatus, projection, remaining, remainingDays } = calcRisk(count, now);
+  // 아직 탑승 기록이 없으면 월말이 가까워도 위험 배지 대신 첫 탑승 안내를 보여준다
+  const status = !(count > 0) && rawStatus !== 'achieved' ? 'not_started' : rawStatus;
   switch (status) {
     case 'achieved':
       return { line1: `이번 달 환급 조건 ${MIN_RIDES}회를 채웠어요`, line2: '', badge: '달성' };
