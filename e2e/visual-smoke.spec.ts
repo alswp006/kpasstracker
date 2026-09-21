@@ -14,6 +14,7 @@ const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
   { path: "/insight", name: "insight" },
   { path: "/records", name: "records" },
+  { path: "/history", name: "history" },
   // { path: "/result", name: "result" },   // ← 이 앱의 라우트를 추가
   // { path: "/settings", name: "settings" },
 ];
