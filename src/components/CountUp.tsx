@@ -6,7 +6,7 @@ import { formatNumber } from "../lib/utils";
 type Typography = ComponentProps<typeof Paragraph.Text>["typography"];
 
 /**
- * 카운트업 숫자 — 0에서 value까지 부드럽게 증가(시각 임팩트). 히어로 숫자에 사용.
+ * 카운트업 숫자 — 값이 바뀔 때 이전 값에서 새 값까지 부드럽게 증가(첫 렌더는 최종값 그대로)(시각 임팩트). 히어로 숫자에 사용.
  *
  * Pre-built (재구현 금지): SummaryHero의 value 슬롯 등 '핵심 숫자 하나'에. Amount처럼 nowrap+
  * tabular+단위 분리(줄바꿈 방지)를 내장한다. prefers-reduced-motion이거나 비-브라우저(jsdom)면
@@ -25,8 +25,9 @@ export function CountUp({
   durationMs?: number;
   testId?: string;
 }) {
-  const [display, setDisplay] = useState(0);
+  const [display, setDisplay] = useState(value);
   const raf = useRef<number | null>(null);
+  const from = useRef(value);
 
   useEffect(() => {
     const canAnimate =
@@ -35,7 +36,9 @@ export function CountUp({
       typeof window.matchMedia === "function" &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (!canAnimate || durationMs <= 0) {
+    const startValue = from.current;
+    from.current = value;
+    if (!canAnimate || durationMs <= 0 || startValue === value) {
       setDisplay(value);
       return;
     }
@@ -44,7 +47,7 @@ export function CountUp({
     const tick = (now: number) => {
       const p = Math.min(1, (now - start) / durationMs);
       const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
-      setDisplay(Math.round(value * eased));
+      setDisplay(Math.round(startValue + (value - startValue) * eased));
       if (p < 1) raf.current = requestAnimationFrame(tick);
       else setDisplay(value);
     };
