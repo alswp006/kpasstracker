@@ -33,55 +33,54 @@ function isUserType(v: unknown): v is UserType {
   return typeof v === 'string' && (USER_TYPES as readonly string[]).includes(v);
 }
 
-function validTimes(o: Record<string, unknown>): boolean {
-  const { createdAt, updatedAt } = o;
-  if (typeof createdAt !== 'string' || typeof updatedAt !== 'string') return false;
-  const c = Date.parse(createdAt);
-  const u = Date.parse(updatedAt);
-  return !Number.isNaN(c) && !Number.isNaN(u) && c <= u;
+function fixTimes(o: Record<string, unknown>, now: Date): { createdAt: string; updatedAt: string } {
+  const iso = now.toISOString();
+  const created = typeof o.createdAt === 'string' && !Number.isNaN(Date.parse(o.createdAt)) ? o.createdAt : null;
+  const updated = typeof o.updatedAt === 'string' && !Number.isNaN(Date.parse(o.updatedAt)) ? o.updatedAt : null;
+  const c = created ?? updated ?? iso;
+  const u = updated ?? c;
+  return Date.parse(c) <= Date.parse(u) ? { createdAt: c, updatedAt: u } : { createdAt: c, updatedAt: c };
 }
 
-/** 설정 로드. 없거나 손상이면 null (저장소는 건드리지 않는다) */
-export function loadSettings(_now: Date = new Date()): UserSettings | null {
+/** 설정 로드. 없거나 손상이면 null (저장소는 건드리지 않는다). passPrice만 범위 밖이면 null로 읽는다 */
+export function loadSettings(now: Date = new Date()): UserSettings | null {
   const v = readJson('kpass:settings');
   if (!isRecord(v)) return null;
   if (v.id !== 'settings' || v.version !== 1) return null;
   if (!isUserType(v.userType)) return null;
   if (!isIntIn(v.avgFare, 100, 10000)) return null;
-  if (v.passPrice !== null && !isIntIn(v.passPrice, 1000, 500000)) return null;
-  if (!validTimes(v)) return null;
-  return v as unknown as UserSettings;
+  const passPrice = isIntIn(v.passPrice, 1000, 500000) ? v.passPrice : null;
+  return { ...(v as unknown as UserSettings), passPrice, ...fixTimes(v, now) };
 }
 
-/** 탑승 기록 로드. 없거나 손상이면 null */
-export function loadRides(_now: Date = new Date()): RideLog | null {
+/** 탑승 기록 로드. 없거나 문서가 손상이면 null. 이상 항목만 버리고 20 초과는 20으로 자른다 */
+export function loadRides(now: Date = new Date()): RideLog | null {
   const v = readJson('kpass:rides');
   if (!isRecord(v)) return null;
   if (v.id !== 'rides' || v.version !== 1) return null;
-  if (!isRecord(v.days)) return null;
-  if (!validTimes(v)) return null;
-  for (const [k, n] of Object.entries(v.days)) {
-    if (!getMonthKey(k) || !isIntIn(n, 1, DAILY_MAX)) return null;
+  const days: Record<string, number> = {};
+  if (isRecord(v.days)) {
+    for (const [k, n] of Object.entries(v.days)) {
+      if (!getMonthKey(k) || typeof n !== 'number' || !Number.isInteger(n) || n < 1) continue;
+      days[k] = Math.min(n, DAILY_MAX);
+    }
   }
-  return v as unknown as RideLog;
+  return { ...(v as unknown as RideLog), days, ...fixTimes(v, now) };
 }
 
-/** 월 스냅샷 로드. 각 스냅샷의 id는 months 맵 키로 덮어쓴다 */
-export function loadMonthMeta(_now: Date = new Date()): MonthMeta | null {
+/** 월 스냅샷 로드. 각 스냅샷의 id는 months 맵 키로 덮어쓰고, 이상 스냅샷만 버린다 */
+export function loadMonthMeta(now: Date = new Date()): MonthMeta | null {
   const v = readJson('kpass:monthMeta');
   if (!isRecord(v)) return null;
   if (v.id !== 'monthMeta' || v.version !== 1) return null;
-  if (!isRecord(v.months)) return null;
-  if (!validTimes(v)) return null;
   const months: Record<string, MonthSnapshot> = {};
-  for (const [key, s] of Object.entries(v.months)) {
-    if (!isRecord(s)) return null;
-    if (!isUserType(s.userType) || !isIntIn(s.avgFare, 100, 10000) || !validTimes(s)) {
-      return null;
+  if (isRecord(v.months)) {
+    for (const [key, s] of Object.entries(v.months)) {
+      if (!isRecord(s) || !isUserType(s.userType) || !isIntIn(s.avgFare, 100, 10000)) continue;
+      months[key] = { ...(s as unknown as MonthSnapshot), id: key, ...fixTimes(s, now) };
     }
-    months[key] = { ...(s as unknown as MonthSnapshot), id: key };
   }
-  return { ...(v as unknown as MonthMeta), months };
+  return { ...(v as unknown as MonthMeta), months, ...fixTimes(v, now) };
 }
 
 /** days 맵 → 월별 합계와 최신순 월 목록. 잘못된 입력은 빈 인덱스 */
