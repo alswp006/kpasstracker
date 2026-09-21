@@ -12,3 +12,10 @@
  src/lib/storage/loaders.ts        | 171 +++++++++++++++++++-------------------
  4 files changed, 221 insertions(+), 115 deletions(-)
 
+
+## Copy service: kpassCopy (display text and amount format) — fix loop 2026-09-21T16:53:56.185Z
+- 시도 횟수: 1
+- 트리아지: trivial (1 minor test failures)
+- 에러 변화:
+  Attempt 1: initial errors — tsc:0|lint:0|test:1
+- 비용: $0.3589

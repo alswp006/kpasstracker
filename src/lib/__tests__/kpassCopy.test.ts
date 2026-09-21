@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatWon, riskCopy, refundCopy, typeRateLabel, verdictCopy } from '@/lib/kpassCopy';
+import { formatAmount, formatDisplay, formatWon, riskCopy, refundCopy, typeRateLabel, verdictCopy } from '@/lib/kpassCopy';
 
 const sep22 = new Date(2026, 8, 22);
 
@@ -7,6 +7,14 @@ describe('kpassCopy', () => {
   it('formatWon', () => {
     expect(formatWon(6600)).toBe('6,600원');
     expect(formatWon(NaN)).toBe('0원');
+  });
+
+  it('formatAmount / formatDisplay', () => {
+    expect(formatAmount(1234567)).toBe('1,234,567원');
+    expect(formatAmount(1234.5, { decimals: 1, currency: 'KRW' })).toBe('1,234.5KRW');
+    expect(formatAmount(-6600)).toBe('-6,600원');
+    expect(formatAmount(NaN)).toBe('0원');
+    expect(formatDisplay('예상 환급', 6600)).toBe('예상 환급 6,600원');
   });
 
   it('riskCopy warning', () => {

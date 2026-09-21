@@ -30,6 +30,24 @@ export function formatWon(n: unknown): string {
   return `${v.toLocaleString('ko-KR')}원`;
 }
 
+/** contract.ts formatAmountFn — "1,234원". currency 기본 '원', decimals 기본 0. 비정상 값은 0 */
+export function formatAmount(amount: number, opts?: { currency?: string; decimals?: number }): string {
+  const currency = opts?.currency ?? '원';
+  const d = opts?.decimals;
+  const decimals = typeof d === 'number' && Number.isFinite(d) ? Math.min(Math.max(Math.trunc(d), 0), 20) : 0;
+  const v = typeof amount === 'number' && Number.isFinite(amount) ? amount : 0;
+  const factor = 10 ** decimals;
+  const rounded = Math.round(Math.abs(v) * factor) / factor;
+  const sign = v < 0 && rounded !== 0 ? '-' : '';
+  const num = rounded.toLocaleString('ko-KR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return `${sign}${num}${currency}`;
+}
+
+/** contract.ts formatDisplayFn — "라벨 1,234원" */
+export function formatDisplay(label: string, amount: number): string {
+  return `${label} ${formatAmount(amount)}`;
+}
+
 /** 홈 위험도 카드 문구 (S2 표) */
 export function riskCopy(count: number, now: Date = new Date()): RiskCopy {
   const { status, projection, remaining, remainingDays } = calcRisk(count, now);
