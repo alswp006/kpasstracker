@@ -21,7 +21,7 @@ import { loadSettings } from '@/lib/storage/loaders';
 async function importFunc(name: 'incrementToday' | 'decrementToday' | 'setDayCount' | 'saveSettings' | 'writePair') {
   try {
     const mod = await import('@/lib/storage/writes');
-    return mod[name];
+    return mod[name] as unknown as (...args: any[]) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
   } catch {
     return null;
   }
@@ -244,9 +244,9 @@ describe('Storage writes: writePair, saveSettings, setDayCount, today ±1, kpass
     const preMonthMetaRaw = localStorage.getItem('kpass:monthMeta');
 
     // Mock setItem to fail on second call
-    const originalSetItem = localStorage.setItem;
+    const originalSetItem = Storage.prototype.setItem;
     let callCount = 0;
-    vi.spyOn(localStorage, 'setItem').mockImplementation(function (key: string, value: string) {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
       callCount++;
       if (callCount === 2) {
         const err = new Error('QuotaExceededError');
@@ -465,7 +465,7 @@ describe('Storage writes: writePair, saveSettings, setDayCount, today ±1, kpass
       ];
 
       for (const exp of expectedExports) {
-        expect(typeof kpassStore[exp]).not.toBe('undefined');
+        expect(typeof (kpassStore as Record<string, unknown>)[exp]).not.toBe('undefined');
       }
     } catch {
       // Module doesn't exist yet - skip

@@ -183,6 +183,7 @@ export interface InsightRouteState {
     kpassPolicy.ts
     review.ts
     share.ts
+    storage/
     storage.ts
     types.ts
     utils.ts
@@ -207,6 +208,7 @@ export interface InsightRouteState {
 - kpassPolicy.ts: export const RETENTION_MONTHS = 12; export const DAILY_MAX = 20; export function cutoffMonth(now: Date = new Date()): string
 - review.ts: export function requestReviewOnce(key: string = REVIEW_REQUESTED_KEY): void
 - share.ts: export interface ShareAppOptions; export async function shareApp(opts: ShareAppOptions): Promise<void>
+- storage/loaders.ts: export function loadSettings(_now: Date = new Date()): UserSettings | null; export function loadRides(_now: Date = new Date()): RideLog | null; export function loadMonthMeta(_now: Date = new Date()): MonthMeta | null; export function buildMonthIndex(days: unknown): MonthIndex
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
 - types.ts: export type UserType = 'general' | 'youth' | 'lowIncome'; export interface UserSettings; export interface RideLog; export interface MonthSnapshot; export interface MonthMeta; export interface MonthIndex; export type RiskStatus = 'achieved' | 'danger' | 'not_started' | 'on_track' | 'warning'; export interface RiskResult
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
@@ -233,6 +235,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: Shared types, policy constants and date key helpers (files: src/lib/types.ts, src/lib/kpassPolicy.ts, src/lib/dateKeys.ts, src/lib/__tests__/dateKeys.test.ts)
+- 0002: Storage loaders and buildMonthIndex (files: src/lib/storage/loaders.ts, src/lib/__tests__/loaders.test.ts)
 
 ## Available exports from existing files
 // src/App.tsx
