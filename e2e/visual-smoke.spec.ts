@@ -16,13 +16,19 @@ const ROUTES: { path: string; name: string }[] = [
   { path: "/records", name: "records" },
   { path: "/history", name: "history" },
   // { path: "/result", name: "result" },   // ← 이 앱의 라우트를 추가
-  // { path: "/settings", name: "settings" },
+  { path: "/settings", name: "settings" },
+  { path: "/onboarding", name: "onboarding" },
 ];
 
 /** 데이터가 필요한 화면용 localStorage 시드(앱에 맞게 채워라). 앱 스크립트보다 먼저 실행된다. */
 async function seed(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    // window.localStorage.setItem("MY_STORAGE_KEY", JSON.stringify({ /* ... */ }));
+    // 설정이 없으면 모든 화면이 /onboarding으로 가드된다 — 설정을 채워 각 화면을 실제로 본다
+    const now = new Date().toISOString();
+    window.localStorage.setItem(
+      "kpass:settings",
+      JSON.stringify({ id: "settings", version: 1, userType: "general", avgFare: 1500, passPrice: 62000, createdAt: now, updatedAt: now }),
+    );
   });
 }
 

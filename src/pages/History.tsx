@@ -39,7 +39,7 @@ export default function History() {
       {rows.length === 0 ? (
         <EmptyState
           testId="history-empty"
-          icon={<Asset.ContentIcon name="icon-calendar-mono" alt="" style={{ width: 32, height: 32 }} />}
+          icon={<Asset.ContentIcon name="icon-check" alt="" style={{ width: 32, height: 32 }} />}
           title="아직 지난달 기록이 없어요"
           description="이번 달이 끝나면 여기에 쌓여요"
           action={
