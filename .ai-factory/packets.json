@@ -1,0 +1,576 @@
+[
+  {
+    "id": "0001",
+    "title": "Shared types, policy constants and date key helpers",
+    "epic": "Epic 1: Data Layer",
+    "task": {
+      "description": "Create src/lib/types.ts with the SPEC types only (no runtime code): UserType, UserSettings, RideLog, MonthSnapshot, MonthMeta, MonthIndex, RiskResult, PassComparison, StoreResult, SaveResult and RouteState/InsightRouteState. Also create the kpassPolicy.ts constants and the local-time dateKeys.ts pure functions.",
+      "acceptance_criteria": [
+        "types.ts contains 0 occurrences of 'export const' and 0 of 'function'. StoreResult reason is exactly 'NO_SETTINGS'|'INVALID_DATE'|'DAILY_MAX'|'BELOW_ZERO'|'QUOTA'",
+        "cutoffMonth(2026-09-22)==='2025-09'. isValidRecordDate returns true for '2026-09-22' and '2025-09-01', and false for '2026-09-23', '2025-08-31' and '2026-02-30'",
+        "At local time 2026-09-22 00:30, toDateKey returns '2026-09-22'. formatDayLabel('2026-09-22')==='9월 22일 (화)'"
+      ]
+    },
+    "covers": [
+      "F1-AC-19"
+    ],
+    "files": [
+      "src/lib/types.ts",
+      "src/lib/kpassPolicy.ts",
+      "src/lib/dateKeys.ts",
+      "src/lib/__tests__/dateKeys.test.ts"
+    ],
+    "definition_of_done": [
+      "npx tsc --noEmit passes",
+      "dateKeys.test.ts passes"
+    ],
+    "depends_on": [],
+    "db_schema": "interface UserSettings{id:'settings';version:1;userType;avgFare;passPrice:number|null;createdAt;updatedAt} → 'kpass:settings'; RideLog{id:'rides';version:1;days:Record<'YYYY-MM-DD',1..20>} → 'kpass:rides'; MonthMeta{id:'monthMeta';months:Record<'YYYY-MM',MonthSnapshot>} → 'kpass:monthMeta'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0002",
+    "title": "Storage loaders and buildMonthIndex",
+    "epic": "Epic 1: Data Layer",
+    "task": {
+      "description": "Implement loadSettings, loadRides, loadMonthMeta and buildMonthIndex in src/lib/storage/loaders.ts. Loaders only read via try/JSON.parse, validate against the SPEC CHECK rules, and treat corrupt data as null or empty. They never call setItem, removeItem or console.error. A snapshot's id is overwritten with its months map key.",
+      "acceptance_criteria": [
+        "After corrupt JSON is stored under 'kpass:settings', loadSettings() returns null, the raw localStorage value is unchanged, and setItem is called 0 times",
+        "When a months['2026-08'] snapshot has id 'x', loadMonthMeta() returns that snapshot with id==='2026-08'",
+        "buildMonthIndex('abc') returns {byMonth:{},monthsDesc:[]}. buildMonthIndex({'2026-09-01':2,'2026-08-03':1}).monthsDesc equals ['2026-09','2026-08']"
+      ]
+    },
+    "covers": [
+      "F1-AC-1",
+      "F1-AC-2",
+      "F1-AC-3",
+      "F1-AC-4",
+      "F1-AC-5",
+      "F1-AC-6",
+      "F1-AC-21",
+      "F1-AC-22"
+    ],
+    "files": [
+      "src/lib/storage/loaders.ts",
+      "src/lib/__tests__/loaders.test.ts"
+    ],
+    "definition_of_done": [
+      "vitest loaders.test.ts passes",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0001"
+    ],
+    "db_schema": "kpass:settings / kpass:rides / kpass:monthMeta (version=1, ISO createdAt<=updatedAt)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0003",
+    "title": "Storage writes: writePair, saveSettings, setDayCount, today ±1, kpassStore barrel",
+    "epic": "Epic 1: Data Layer",
+    "task": {
+      "description": "In src/lib/storage/writes.ts, implement writePair (two-key write with rollback), saveSettings, setDayCount, incrementToday and decrementToday. Checks run in order: NO_SETTINGS → INVALID_DATE → DAILY_MAX/BELOW_ZERO, and QUOTA triggers a rollback. Writes clean up entries older than 13 months, and writing to a past month creates no snapshot. kpassStore.ts re-exports loaders and writes.",
+      "acceptance_criteria": [
+        "Without settings, incrementToday() returns {ok:false,reason:'NO_SETTINGS'} and 'kpass:rides' stays absent",
+        "With today at 20 rides, incrementToday() returns DAILY_MAX. With today at 0, decrementToday() returns BELOW_ZERO. setDayCount('2026-09-23') returns INVALID_DATE",
+        "When setItem is mocked to throw QuotaExceededError on the second key, the result is QUOTA and both 'kpass:rides' and 'kpass:monthMeta' match their pre-write raw values",
+        "After a write, day keys earlier than '2025-09' are deleted. setDayCount('2026-08-10',3) leaves months['2026-08'] unchanged"
+      ]
+    },
+    "covers": [
+      "F1-AC-7",
+      "F1-AC-8",
+      "F1-AC-9",
+      "F1-AC-10",
+      "F1-AC-11",
+      "F1-AC-12",
+      "F1-AC-13",
+      "F1-AC-14",
+      "F1-AC-15",
+      "F1-AC-16",
+      "F1-AC-17",
+      "F1-AC-18",
+      "F1-AC-20"
+    ],
+    "files": [
+      "src/lib/storage/writes.ts",
+      "src/lib/kpassStore.ts",
+      "src/lib/__tests__/writes.test.ts"
+    ],
+    "definition_of_done": [
+      "writes.test.ts passes (fake timers at 2026-09-22 12:00 local)",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0002"
+    ],
+    "db_schema": "writePair(kpass:rides, kpass:monthMeta) with rollback; RideLog.days value 0 → key deleted",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0004",
+    "title": "KpassProvider and useSettings/useRides/useMonthMeta hooks",
+    "epic": "Epic 1: Data Layer",
+    "task": {
+      "description": "src/hooks/kpass.tsx provides KpassProvider (context) plus useSettings, useRides and useMonthMeta. State is read synchronously from localStorage at mount. Memory state is updated only after a write returns ok. useRides derives MonthIndex with useMemo(buildMonthIndex(days)). On a visibilitychange to visible, state is reloaded.",
+      "acceptance_criteria": [
+        "With renderHook, after useRides().increment() returns ok, todayCount rises by 1 and monthIndex.byMonth['2026-09'] rises by 1",
+        "When setItem is mocked to throw QUOTA, todayCount after increment() is unchanged and the returned reason is 'QUOTA'",
+        "After the storage value is changed externally and a visibilitychange (visible) event is dispatched, the hook value reflects the new storage value"
+      ]
+    },
+    "covers": [
+      "F1-AC-14",
+      "F4-AC-1"
+    ],
+    "files": [
+      "src/hooks/kpass.tsx",
+      "src/hooks/__tests__/kpass.test.tsx"
+    ],
+    "definition_of_done": [
+      "renderHook tests pass",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0003"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0005",
+    "title": "Calculation service ①: refund, net cost and break-even",
+    "epic": "Epic 2: Services",
+    "task": {
+      "description": "Put isValidCount/isValidPositive/isValidType in src/lib/calc/guards.ts. Implement calcRefund, calcKpassNetCost and calcBreakEven in src/lib/calc/refund.ts. Formula: floor(min(rides,60)×fare×rate/10)×10. Invalid input returns 0 or null and never throws. Constants come only from kpassPolicy.ts.",
+      "acceptance_criteria": [
+        "calcRefund returns: (22,1500,'general')=6600, (30,1500,'youth')=13500, (21,1500,'lowIncome')=16690, (20,1500,'lowIncome')=0 and (75,1500,'general')=18000",
+        "calcBreakEven(1500,'general',55000)=46 and calcBreakEven(1500,'general',500000)=null",
+        "NaN, Infinity, negative, string and bad type inputs make calcRefund/calcKpassNetCost return 0 and calcBreakEven return null, with 0 exceptions"
+      ]
+    },
+    "covers": [
+      "F2-AC-1",
+      "F2-AC-2",
+      "F2-AC-3",
+      "F2-AC-7",
+      "F2-AC-8",
+      "F2-AC-10",
+      "F2-AC-13"
+    ],
+    "files": [
+      "src/lib/calc/guards.ts",
+      "src/lib/calc/refund.ts",
+      "src/lib/__tests__/calcRefund.test.ts"
+    ],
+    "definition_of_done": [
+      "calcRefund.test.ts passes",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0001"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0006",
+    "title": "Calculation service ②: projection, risk, pass comparison and kpassCalc barrel",
+    "epic": "Epic 2: Services",
+    "task": {
+      "description": "src/lib/calc/risk.ts implements calcProjection, calcRisk (order: achieved → danger → not_started → on_track → warning), comparePass and calcInsightInitialRides=min(max(projection,count),120). src/lib/kpassCalc.ts re-exports refund and risk. Screens import only from kpassCalc.",
+      "acceptance_criteria": [
+        "calcRisk(14, 2026-09-22) returns {status:'warning',projection:19,remaining:7,remainingDays:9}. calcRisk(0, 09-29) returns {danger,0,21,2}. calcRisk(0, 09-20) returns not_started. calcRisk(NaN, 09-22) returns {danger,0,21,9}",
+        "comparePass returns {kpassNetCost:0,passPrice:0,winner:'even',diff:0} when passPrice is null or NaN",
+        "calcInsightInitialRides returns: (10, 09-01)=120, (130, 09-22)=120, (14, 09-22)=19"
+      ]
+    },
+    "covers": [
+      "F2-AC-4",
+      "F2-AC-5",
+      "F2-AC-6",
+      "F2-AC-9",
+      "F2-AC-11",
+      "F2-AC-12"
+    ],
+    "files": [
+      "src/lib/calc/risk.ts",
+      "src/lib/kpassCalc.ts",
+      "src/lib/__tests__/calcRisk.test.ts"
+    ],
+    "definition_of_done": [
+      "calcRisk.test.ts passes",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0005"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0007",
+    "title": "Copy service: kpassCopy (display text and amount format)",
+    "epic": "Epic 2: Services",
+    "task": {
+      "description": "src/lib/kpassCopy.ts turns the SPEC copy tables into pure functions: formatWon, riskCopy (5 risk-card rows), refundCopy (3 rows, computed only through calcRefund), typeRateLabel and verdictCopy (S4 verdict text). Pages never build copy themselves; they only call these functions.",
+      "acceptance_criteria": [
+        "riskCopy for (14 rides, 09-22) returns line1 '지금 속도면 19회로 2회 모자라요', line2 '남은 9일 동안 7회 더 타야 해요' and badge '주의'",
+        "refundCopy(14,1500,'general').sub==='21회까지 7회 남았어요 · 달성하면 예상 6,300원부터 받아요'. refundCopy(0,…).sub==='21회를 채우면 환급이 시작돼요'. refundCopy(22,…).amount==='6,600원'",
+        "typeRateLabel('general')==='일반 20%'. verdictCopy text and badge for kpass/pass/even match the SPEC S4 table character for character"
+      ]
+    },
+    "covers": [
+      "F4-AC-4",
+      "F4-AC-9",
+      "F4-AC-10",
+      "F4-AC-11"
+    ],
+    "files": [
+      "src/lib/kpassCopy.ts",
+      "src/lib/__tests__/kpassCopy.test.ts"
+    ],
+    "definition_of_done": [
+      "kpassCopy.test.ts passes",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0006"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0008",
+    "title": "S1 onboarding/settings shared form (SettingsForm)",
+    "epic": "Epic 3: UI Pages",
+    "task": {
+      "description": "src/pages/SettingsForm.tsx is one component that takes mode='onboarding'|'settings'. It handles type selection, validates avg fare (100–10,000) and pass price (empty=null, 1,000–500,000), and calls saveSettings. Onboarding success → navigate('/',{replace:true}). Settings success → Toast then navigate(-1). On QUOTA, show a Toast and do not navigate.",
+      "acceptance_criteria": [
+        "On first render, '일반' shows ✓, the fare field is '' and the '시작하기' button is disabled",
+        "When fare 50 is submitted, help text '100원에서 10,000원 사이로 입력해주세요' appears and 'kpass:settings' is not stored",
+        "When settings mode is saved with an empty pass price, 'kpass:settings' has passPrice===null and the Toast '설정을 저장했어요' appears"
+      ]
+    },
+    "covers": [
+      "F3-AC-1",
+      "F3-AC-3",
+      "F3-AC-4",
+      "F3-AC-5",
+      "F3-AC-6"
+    ],
+    "files": [
+      "src/pages/SettingsForm.tsx",
+      "src/pages/__tests__/SettingsForm.test.tsx"
+    ],
+    "definition_of_done": [
+      "RTL tests pass",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0004"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern FixedBottomCTA. <ScreenScaffold><Top title={mode==='onboarding'?'K-패스 유형을 알려주세요':'설정'}/><Spacing size={16}/> 3 type ListRows (일반/청년/저소득, 56px+, ✓ = Paragraph.Text color primary, tap = tickWeak)<Spacing size={24}/><TextField variant='box' label='1회 평균 요금' suffix='원' inputMode='numeric' placeholder='예: 1500' hasError help/><Spacing size={8}/><Paragraph.Text typography='t7'>교통카드 1회 결제 금액을 넣어주세요</Paragraph.Text>; settings mode only: TextField '월 정기권 가격' placeholder '예: 55000'. <SubmitFooter><Button variant='fill' size='xlarge' display='block'>시작하기|저장</Button></SubmitFooter>. Errors: '평균 요금을 입력해주세요' / '100원에서 10,000원 사이로 입력해주세요' / '1,000원에서 500,000원 사이로 입력해주세요'. QUOTA Toast: '저장 공간이 부족해 저장하지 못했어요'. Validation failure = tickStrong; success = success haptic. Onboarding calls logClick('onboarding_start'). Field focus calls scrollIntoView({block:'center'}). No loading state."
+  },
+  {
+    "id": "0009",
+    "title": "S2 home cards (progress, risk, refund)",
+    "epic": "Epic 3: UI Pages",
+    "task": {
+      "description": "src/components/home/HomeCards.tsx is a presentational component that takes count, settings and today. It renders the progress SummaryHero (CountUp count/21, MiniBar), the risk card (riskCopy line1/line2/Badge) and the refund card (refundCopy amount/sub, typeRateLabel). It builds no copy directly and calls only kpassCopy/kpassCalc.",
+      "acceptance_criteria": [
+        "With count=14, 2026-09-22 and general 1500, the screen shows '지금 속도면 19회로 2회 모자라요' and Badge '주의'",
+        "With count=22, the refund card shows '6,600원'",
+        "With count=0, the risk card shows no Badge and the refund sub is '21회를 채우면 환급이 시작돼요'"
+      ]
+    },
+    "covers": [
+      "F4-AC-3",
+      "F4-AC-4",
+      "F4-AC-5",
+      "F4-AC-9",
+      "F4-AC-10",
+      "F4-AC-11"
+    ],
+    "files": [
+      "src/components/home/HomeCards.tsx",
+      "src/components/home/__tests__/HomeCards.test.tsx"
+    ],
+    "definition_of_done": [
+      "RTL tests pass",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0007"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern Top+right action (card area). SummaryHero + CountUp (only animation) + MiniBar progress (count/21). Card (check .d.ts; if missing use the template substitute) → Paragraph.Text t5 line1, t7 line2, Badge (주의/위험/달성). Refund card: Paragraph amount (formatWon) + sub + typeRateLabel. Spacing size prop required. Colors only var(--tds-color-*). No loading spinner."
+  },
+  {
+    "id": "0010",
+    "title": "S2 Home page (one-tap record + navigation)",
+    "epic": "Epic 3: UI Pages",
+    "task": {
+      "description": "src/pages/Home.tsx renders the top bar (settings button), HomeCards, the record ±1 buttons (useRides increment/decrement), a '정기권과 비교하기' button (navigate('/insight',{state:{rideCount:calcInsightInitialRides}})) and a '이번 달 기록' ListRow (/records). Failures show a reason-specific Toast. A banner sits below the cards.",
+      "acceptance_criteria": [
+        "After the '+1 탔어요' button is tapped, the count shows 1 higher and localStorage days['2026-09-22'] goes up by 1",
+        "At 20 rides today, tapping +1 shows a DAILY_MAX Toast, leaves the count unchanged and fires tickStrong",
+        "Tapping '정기권과 비교하기' navigates to /insight with state.rideCount===calcInsightInitialRides(count,today)"
+      ]
+    },
+    "covers": [
+      "F4-AC-1",
+      "F4-AC-2",
+      "F4-AC-6",
+      "F4-AC-7",
+      "F4-AC-8"
+    ],
+    "files": [
+      "src/pages/Home.tsx",
+      "src/pages/__tests__/Home.test.tsx"
+    ],
+    "definition_of_done": [
+      "Home render test passes",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0009"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title='이번 달 K-패스' right={<div style={{minWidth:44,minHeight:44,display:'flex',alignItems:'center'}}><Button variant='weak' size='small' aria-label='설정' onClick={()=>navigate('/settings')}>설정</Button></div>}/> <HomeCards/> <Spacing size={16}/> record buttons: Button variant='fill' size='xlarge' display='block' '+1 탔어요' (success haptic) + Button variant='weak' '-1' (tickWeak). ListRow '이번 달 기록' → /records. Button '정기권과 비교하기'. AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} goes between content sections, below the cards. Toast position='bottom'. No loading state."
+  },
+  {
+    "id": "0011",
+    "title": "S4 insight ① input-state hook and free tier",
+    "epic": "Epic 3: UI Pages",
+    "task": {
+      "description": "src/hooks/useInsightInputs.ts holds ride count (0–120) and pass price (1,000–500,000) state. Initial values: a validated location.state.rideCount, otherwise calcInsightInitialRides; the pass price comes from settings. src/components/insight/InsightFree.tsx shows this month's expected refund and the verdict. comparePass is called only when both inputs are valid.",
+      "acceptance_criteria": [
+        "Entering with state {rideCount:'abc'} gives the ride count calcInsightInitialRides(count,today)",
+        "A ride count of 121 shows error help and hides the verdict. With pass price null, the verdict area shows a pass price input prompt and comparePass is called 0 times",
+        "With valid input where diff=0, the '동일' verdict and its Badge appear"
+      ]
+    },
+    "covers": [
+      "F6-AC-1",
+      "F6-AC-2",
+      "F6-AC-3",
+      "F6-AC-4",
+      "F6-AC-5",
+      "F6-AC-8",
+      "F6-AC-10"
+    ],
+    "files": [
+      "src/hooks/useInsightInputs.ts",
+      "src/components/insight/InsightFree.tsx",
+      "src/components/insight/__tests__/InsightFree.test.tsx"
+    ],
+    "definition_of_done": [
+      "MemoryRouter + Provider harness test passes",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0007"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Free tier (outside the reward gate): TextField variant='box' label='이번 달 탑승 횟수' suffix='회' inputMode='numeric' (0~120, hasError/help); TextField '월 정기권 가격' suffix='원' (1,000~500,000). SummaryHero expected refund (formatWon) + Paragraph verdict (verdictCopy text) + Badge. When input is invalid, hide the verdict and show only help. No AI label (no generative AI). Colors only var(--tds-color-*)."
+  },
+  {
+    "id": "0012",
+    "title": "S4 Insight page (locked tier + reward gate)",
+    "epic": "Epic 3: UI Pages",
+    "task": {
+      "description": "src/pages/Insight.tsx puts InsightFree outside the gate and wraps only the locked tier (3 per-type scenarios, break-even ride count, 6-month Sparkline trend) in <TossRewardAd slotId={VITE_TOSS_AD_SLOT_ID}>. The gate fails open when there is no slot ID. The locked tier lives in src/components/insight/InsightLocked.tsx.",
+      "acceptance_criteria": [
+        "With no slot ID, the 3 scenario rows (일반/청년/저소득), the break-even '46회' (1500 general 55000) and the Sparkline render",
+        "With breakEven null, the text '이 가격에서는 K-패스가 항상 유리해요' (per SPEC copy) appears",
+        "InsightFree's expected refund and verdict are not children of TossRewardAd (DOM check)"
+      ]
+    },
+    "covers": [
+      "F6-AC-6",
+      "F6-AC-7",
+      "F6-AC-9"
+    ],
+    "files": [
+      "src/pages/Insight.tsx",
+      "src/components/insight/InsightLocked.tsx",
+      "src/pages/__tests__/Insight.test.tsx"
+    ],
+    "definition_of_done": [
+      "Tests pass in the gate-auto-open environment",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0011"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title='분석'/><InsightFree/><Spacing size={24}/><TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID}><InsightLocked/></TossRewardAd>. Locked: 3 ListRow scenarios (type + typeRateLabel + net cost formatWon), ListRow break-even ride count, Sparkline 6-month trend (MonthIndex, recentMonthKeys(today,6)). Never wrap the whole screen. SubmitFooter stacks above FloatingTabBar (safe-area paddingBottom)."
+  },
+  {
+    "id": "0013",
+    "title": "[부가] S3 this month's records edit screen (/records)",
+    "epic": "Epic 3: UI Pages",
+    "task": {
+      "description": "[부가] src/pages/Records.tsx lists this month's dates from day 1 to today with formatDayLabel as ListRows, newest first. Each row edits its count with ± (setDayCount). The top shows the month total from MonthIndex. Failure reasons show as a Toast. Screen ACs are implemented according to their tags.",
+      "acceptance_criteria": [
+        "At 2026-09-22, 22 rows render and the first row is '9월 22일 (화)'",
+        "Tapping + on a 20-ride row shows a DAILY_MAX Toast and leaves the value at 20",
+        "Pressing - on a 1-ride row removes that date key from localStorage days and lowers the top total by 1"
+      ]
+    },
+    "covers": [
+      "F5-AC-1",
+      "F5-AC-2",
+      "F5-AC-3",
+      "F5-AC-4"
+    ],
+    "files": [
+      "src/pages/Records.tsx",
+      "src/pages/__tests__/Records.test.tsx"
+    ],
+    "definition_of_done": [
+      "RTL tests pass",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0004"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title='이번 달 기록'/> SummaryHero month total. ListRow per date: contents=ListRow.Texts top=formatDayLabel, right= ± Button variant='weak' size='small' (44px wrapper, tickWeak; tickStrong at limit). Empty state: Asset.ContentIcon + text. Toast bottom. Tab bar hidden."
+  },
+  {
+    "id": "0014",
+    "title": "[부가] S5 past refund records (/history)",
+    "epic": "Epic 3: UI Pages",
+    "task": {
+      "description": "[부가] src/pages/History.tsx shows past months from MonthIndex.monthsDesc (excluding this month) as ListRows labeled with formatMonthLabel. Each month's refund uses that month's MonthSnapshot (userType/avgFare) when present, otherwise current settings. With no records, show the empty state.",
+      "acceptance_criteria": [
+        "When '2026-08' has 22 rides and a snapshot of general 1500, the row '2026년 8월' shows '6,600원'",
+        "Changing settings to youth leaves the August amount at 6,600원",
+        "With no past records, the empty text and a '홈으로 가기' Button render"
+      ]
+    },
+    "covers": [
+      "F7-AC-1",
+      "F7-AC-2",
+      "F7-AC-3"
+    ],
+    "files": [
+      "src/pages/History.tsx",
+      "src/pages/__tests__/History.test.tsx"
+    ],
+    "definition_of_done": [
+      "RTL tests pass",
+      "tsc passes"
+    ],
+    "depends_on": [
+      "0004"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title='지난 기록'/> ListRow per month: ListRow.Texts type='2RowTypeA' top=formatMonthLabel bottom='N회 · typeRateLabel' right=formatWon(refund). Empty: Asset.ContentIcon + Paragraph.Text + Button '홈으로 가기'. AdSlot below the list. No loading state."
+  },
+  {
+    "id": "0015",
+    "title": "Routing, settings guard, Provider, FloatingTabBar wiring (App.tsx)",
+    "epic": "4",
+    "task": {
+      "description": "src/App.tsx wraps KpassProvider, defines all Routes, wraps pages in RequireSettings (no settings → /onboarding replace) and sends * → / replace. FloatingTabBar (홈/분석/지난 기록) shows only on /, /insight and /history, with tickWeak on switch. main.tsx is not modified.",
+      "acceptance_criteria": [
+        "With no settings, entering / in MemoryRouter redirects to /onboarding",
+        "Entering /unknown renders Home (/)",
+        "FloatingTabBar is present on /insight and absent on /records and /settings"
+      ]
+    },
+    "covers": [
+      "F3-AC-2",
+      "F8-AC-1",
+      "F8-AC-2",
+      "F8-AC-3",
+      "F8-AC-4"
+    ],
+    "files": [
+      "src/App.tsx",
+      "src/components/RequireSettings.tsx",
+      "src/__tests__/App.test.tsx"
+    ],
+    "definition_of_done": [
+      "MemoryRouter integration test passes",
+      "tsc passes; main.tsx unchanged"
+    ],
+    "depends_on": [
+      "0008",
+      "0010",
+      "0012",
+      "0013",
+      "0014"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Routes: /onboarding→SettingsForm mode='onboarding'; /settings, /, /records, /insight, /history → RequireSettings wrapped; * → Navigate to '/' replace. FloatingTabBar tabs=[홈 '/', 분석 '/insight', 지난 기록 '/history'], active tab = color tint only (no solid pill), 44px+ touch targets, paddingBottom calc(Npx + env(safe-area-inset-bottom))."
+  },
+  {
+    "id": "0016",
+    "title": "Banner area component + compliance static scan + smoke test",
+    "epic": "Epic 4: Integration",
+    "task": {
+      "description": "src/components/BannerArea.tsx wraps AdSlot (renders nothing when VITE_TOSS_AD_GROUP_ID is missing). The static scan test checks src for HEX colors, banned UI libraries, external login/payment/ad SDKs, install-prompt copy and '취소' button copy. Does not touch App.tsx or main.tsx.",
+      "acceptance_criteria": [
+        "With no ad group ID, BannerArea renders null and throws 0 exceptions",
+        "The compliance scan finds 0 matches for /#[0-9a-fA-F]{3,6}\\b/ in src/**/*.tsx and 0 imports of '@mui', 'antd', 'stripe' or 'admob'",
+        "Smoke test: after onboarding submit → home +1, localStorage days['2026-09-22']===1"
+      ]
+    },
+    "covers": [
+      "F8-AC-5",
+      "F8-AC-6",
+      "F8-AC-7",
+      "F8-AC-8"
+    ],
+    "files": [
+      "src/components/BannerArea.tsx",
+      "src/__tests__/compliance.test.ts",
+      "src/__tests__/smoke.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx tsc --noEmit and npx vitest run pass in full"
+    ],
+    "depends_on": [
+      "0015"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "BannerArea: <Spacing size={16}/><AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID}/> placed only between content sections, not intrusive. No hard-coded colors."
+  }
+]
