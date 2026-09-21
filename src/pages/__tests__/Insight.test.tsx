@@ -22,6 +22,7 @@ vi.mock('@toss/tds-mobile', () => {
   );
   return {
     Badge: T,
+    Button: ({ children, onClick }: { children?: React.ReactNode; onClick?: () => void }) => <button onClick={onClick}>{children}</button>,
     Spacing: () => null,
     Top: Object.assign(({ title }: { title: React.ReactNode }) => <div>{title}</div>, { TitleParagraph: T }),
     Paragraph: { Text: T },

@@ -1,9 +1,11 @@
-import { Spacing, Top } from '@toss/tds-mobile';
+import { Button, Spacing, Top } from '@toss/tds-mobile';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { TossRewardAd } from '@/components/TossRewardAd';
 import { useInsightInputs } from '@/hooks/useInsightInputs';
 import { InsightFree } from '@/components/insight/InsightFree';
 import { InsightLocked } from '@/components/insight/InsightLocked';
+import { logClick } from '@/lib/analytics';
+import { shareApp } from '@/lib/share';
 
 /**
  * S4 분석 (/insight) — 핵심 결과 화면.
@@ -20,6 +22,17 @@ export default function Insight() {
       <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID ?? ''}>
         <InsightLocked inputs={inputs} />
       </TossRewardAd>
+      <Spacing size={24} />
+      <Button
+        variant="weak"
+        display="block"
+        onClick={() => {
+          logClick('insight_share');
+          shareApp({ message: 'K-패스 환급액, 정기권과 비교해 봤어요', path: '/insight' });
+        }}
+      >
+        결과 공유하기
+      </Button>
       <Spacing size={24} />
     </ScreenScaffold>
   );
